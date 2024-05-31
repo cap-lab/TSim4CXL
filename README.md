@@ -75,7 +75,7 @@ Terminate:0:0:
 ## How to Compile
 - **cxlsim**
 ```
-git clone 
+git clone https://github.com/cap-lab/CXLSim.git
 mkdir build && build
 cmake ..
 make
