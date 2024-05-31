@@ -1,0 +1,20 @@
+{
+  "host_num" : 2, 
+  "packet_size" : 1024, // Byte
+
+  // CXL parameters
+  "flit_size" : 64, // Byte
+  "link_efficiency" : 0.928, 
+  "PCIe_raw_bandwidth" : 37, // Byte per nanosecond
+  "cxl_port_latency" : 62, // nanosecond
+  "cxl_ic_latency" : 15, // nanosecond
+
+  "cpu0" : {
+    "freq" : 2.1, //Ghz
+  	"cpu_latency" : 45, // nanosecond (Core+LLC)
+  },
+  "cpu1" : {
+    "freq" : 2.1, //Ghz
+  	"cpu_latency" : 45, // nanosecond (Core+LLC)
+  }
+}

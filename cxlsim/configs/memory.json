@@ -1,0 +1,8 @@
+{
+  "dram_num" : 1,
+  "dram0" : {
+    "config" : "DDR5_3200C", //Ramulator2
+    "size" : "0xc0000000",
+    "freq" : 1.6,
+  }
+}
