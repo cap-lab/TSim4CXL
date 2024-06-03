@@ -105,20 +105,3 @@ make
 ```
 ./cxlsim
 ```
-
-project-name/
-├── src/
-│   ├── index.js       # Entry point for the application
-│   ├── components/    # React components or other UI elements
-│   ├── services/      # API calls and business logic
-│   └── styles/        # CSS or SCSS styles
-├── public/
-│   ├── index.html     # HTML template
-│   └── assets/        # Images and other assets
-├── tests/
-│   ├── unit/          # Unit tests
-│   └── integration/   # Integration tests
-├── .gitignore         # Files and directories to ignore in git
-├── package.json       # npm configuration and dependencies
-├── README.md          # Project documentation
-└── LICENSE            # Project license
