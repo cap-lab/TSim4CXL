@@ -94,7 +94,7 @@ make
     - **etc/request.h -> ramulator2/src/base/request.h** *(need to fix)*
     - **etc/request.cpp -> ramulator2/src/base/request.cpp** *(need to fix)*
     - **etc/generic_dram_controller.cpp -> ramulator2/src/dram_controller/impl/generic_dram_controller.cpp** *(need to fix)*
-    - **etc/DDR5_3200C.yaml -> ramulator2/config/DDR5_3200C.yaml** *(need to add)*
+    - **etc/DDR5_3200C.yaml -> ramulator2/configs/DDR5_3200C.yaml** *(need to add)*
     - **etc/Bridge.cpp -> ramulator2/src/Bridge.cpp** *(need to add)*
     - **etc/Bridge.h -> ramulator2/src/Bridge.h** *(need to add)*
 
