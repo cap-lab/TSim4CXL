@@ -103,5 +103,6 @@ make
 
 ## How to Run
 ```
+cd /cxlsim/build
 ./cxlsim
 ```
