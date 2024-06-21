@@ -78,7 +78,7 @@ Terminate:0:0:
 git clone https://github.com/cap-lab/CXLSim.git
 cd CXLSim
 mkdir shared
-cd cxlsim
+cd backplane
 mkdir build && cd build
 cmake ..
 make
@@ -103,6 +103,6 @@ make
 
 ## How to Run
 ```
-cd /cxlsim/build
+cd /backplane/build
 ./cxlsim
 ```
