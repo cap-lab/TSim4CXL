@@ -13,7 +13,7 @@ void Host::run_host_proc(int id) {
 	stringstream command;
 
     // Compile and Execute the C++ code
-    command << "make clean -C ../../host/ && make -C ../../host/ && ../../host/my_program " << id;
+    command << "make clean -C ../../host/ && make -C ../../host/ && ../../host/host_exe " << id;
 
 	communicator =  new ShmemCommunicator();
     communicator->prepare_connection(name.c_str(), id);

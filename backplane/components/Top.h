@@ -21,8 +21,8 @@ uint32_t active_dram = 0;
 
 SC_MODULE(Top)
 {
-    Wrapper** wrapper;
-    Dram** dram;
+    SIMWrapper** sim_wrapper;
+    MEMWrapper** mem_wrapper;
 	USP** upstream_port;
 	DSP** downstream_port;
 	Interconnector* interconnector;
@@ -30,12 +30,12 @@ SC_MODULE(Top)
 
     SC_CTOR(Top)
     {
-        host_num = cfgs.get_host_num();
-        dram_num = cfgs.get_dram_num();
-        
+		host_num = cfgs.get_host_num();
+		dram_num = cfgs.get_dram_num();
+
 		/* Instantiate components */
-        wrapper = new Wrapper*[host_num];
-    	dram = new Dram*[dram_num];
+		sim_wrapper = new SIMWrapper*[host_num];
+    	mem_wrapper = new MEMWrapper*[dram_num];
     	upstream_port = new USP*[host_num];
     	downstream_port = new DSP*[host_num];
 		clock = new sc_in<bool>[host_num];
@@ -45,8 +45,8 @@ SC_MODULE(Top)
 		for (int i = 0; i < host_num; i++) {
 			string wrapper_name = "host_" + to_string(i);
 			active_cores++;	 
-			wrapper[i] = new Wrapper(wrapper_name.c_str(), i, host_num);
-			wrapper[i]->clock.bind(clock[i]);
+			sim_wrapper[i] = new SIMWrapper(wrapper_name.c_str(), i, host_num);
+			sim_wrapper[i]->clock.bind(clock[i]);
 			
 			/* USP&DSP */
 			string usp_name = "host_" + to_string(i) + "_usp_" + to_string(i);
@@ -57,7 +57,7 @@ SC_MODULE(Top)
 			downstream_port[i]->clock.bind(clock[i]);
 			
 			/* Bind the modules */
-			wrapper[i]->master.bind(upstream_port[i]->slave);
+			sim_wrapper[i]->master.bind(upstream_port[i]->slave);
 			upstream_port[i]->master.bind(downstream_port[i]->slave);
 			downstream_port[i]->master.bind(interconnector->slave);
 		}
@@ -66,11 +66,11 @@ SC_MODULE(Top)
 		for (int i = 0; i < dram_num; i++) {
 			string module_name = "mem_" + to_string(i);
 			stringstream config;
-	        config << cfgs.get_dram_config(i);
-	   		dram[i] = new Dram(module_name.c_str(), config.str(), i);
-			dram[i]->clock.bind(clock[i%host_num]);
+			config << cfgs.get_dram_config(i);
+			mem_wrapper[i] = new MEMWrapper(module_name.c_str(), config.str(), i);
+			mem_wrapper[i]->clock.bind(clock[i%host_num]);
 			
-			interconnector->master.bind(dram[i]->slave);
+			interconnector->master.bind(mem_wrapper[i]->slave);
 		}
 		
 		active_dram |= 1;
@@ -80,14 +80,14 @@ SC_MODULE(Top)
     }
 
     void finish() {
-        if (wrapper) {
-            for (int i = 0; i < host_num; i++) {
-                if (wrapper[i]) {
-                    delete (wrapper[i]);
-                    wrapper[i] = NULL;
-                }
-            }
-        }
+		if (sim_wrapper) {
+			for (int i = 0; i < host_num; i++) {
+				if (sim_wrapper[i]) {
+					delete (sim_wrapper[i]);
+					sim_wrapper[i] = NULL;
+				}
+			}
+		}
 		if (upstream_port) {
 			for (int i = 0; i < host_num; i++) {
 				if (upstream_port[i]) {
@@ -108,13 +108,13 @@ SC_MODULE(Top)
 			delete interconnector;
 			interconnector = NULL;
 		}
-		if (dram) {
-            for (int i = 0; i < dram_num; i++) {
-                if (dram[i]) {
-                    delete (dram[i]);
-                    dram[i] = NULL;
-                }
-            }
+		if (mem_wrapper) {
+			for (int i = 0; i < dram_num; i++) {
+				if (mem_wrapper[i]) {
+					delete (mem_wrapper[i]);
+					mem_wrapper[i] = NULL;
+				}
+			}
 		}
     }
 

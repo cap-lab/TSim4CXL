@@ -13,15 +13,15 @@ using namespace tlm;
 using namespace sc_core;
 using namespace ramulator2;
 
-class Dram: public sc_module
+class MEMWrapper: public sc_module
 {
 public:
-    SC_HAS_PROCESS(Dram);
+    SC_HAS_PROCESS(MEMWrapper);
 
-    Dram(sc_module_name name, string config_name, int id);
-    ~Dram();
+    MEMWrapper(sc_module_name name, string config_name, int id);
+    ~MEMWrapper();
 
-	tlm_utils::simple_target_socket<Dram> slave;
+	tlm_utils::simple_target_socket<MEMWrapper> slave;
     
 	sc_in<bool> clock;
 
@@ -72,5 +72,5 @@ private:
 	Statistics *stats;	
     Bridge *bridge;
     mm m_mm;
-	tlm_utils::peq_with_cb_and_phase<Dram> m_peq;
+	tlm_utils::peq_with_cb_and_phase<MEMWrapper> m_peq;
 };

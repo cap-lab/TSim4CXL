@@ -6,11 +6,11 @@ extern uint32_t active_cores;
 extern uint32_t active_dram;
 map<tlm_generic_payload *, uint32_t> device_map;
 
-Wrapper::Wrapper(sc_module_name name, int id, int num) : sc_module(name), host_id(id), name(string(name)),
+SIMWrapper::SIMWrapper(sc_module_name name, int id, int num) : sc_module(name), host_id(id), name(string(name)),
 											active_cycle(0), total_cycle(0), outstanding(0),
 											w_idx(0), r_idx(0), wack_num(0), rack_num(0),
 											req_done(false), received(false), terminate(false),
-											master("master"), clock("clock"), m_peq(this, &Wrapper::peq_cb)
+											master("master"), clock("clock"), m_peq(this, &SIMWrapper::peq_cb)
 {
 	init();
     SC_THREAD(periodic_process);
@@ -23,10 +23,10 @@ Wrapper::Wrapper(sc_module_name name, int id, int num) : sc_module(name), host_i
     sensitive << clock.neg();
     dont_initialize();
 
-	master.register_nb_transport_bw(this, &Wrapper::nb_transport_bw);
+	master.register_nb_transport_bw(this, &SIMWrapper::nb_transport_bw);
 };
 
-Wrapper::~Wrapper() {
+SIMWrapper::~SIMWrapper() {
 	if (stats) {
 		stats->print_stats();
 		free(stats);
@@ -39,7 +39,7 @@ Wrapper::~Wrapper() {
     delete host;
 }
 
-void Wrapper::init() {
+void SIMWrapper::init() {
 	host = new Host(string(name), host_id);
 	stats = new Statistics();
 	stats->set_name(string(name));
@@ -51,7 +51,7 @@ void Wrapper::init() {
 	packet_data = new uint8_t[cfgs.get_packet_size()];
 }
 
-void Wrapper::periodic_process() {
+void SIMWrapper::periodic_process() {
 	/* Run host application */
 	host->run_host_proc(host_id);
    
@@ -93,7 +93,7 @@ void Wrapper::periodic_process() {
 	sc_stop();
 }
 
-void Wrapper::send_read_request(tlm_generic_payload *outgoing) {
+void SIMWrapper::send_read_request(tlm_generic_payload *outgoing) {
 	tlm_phase phase = BEGIN_REQ;
 	sc_time t = SC_ZERO_TIME;
 	tlm_sync_enum reply = master->nb_transport_fw(*outgoing, phase, t);
@@ -101,7 +101,7 @@ void Wrapper::send_read_request(tlm_generic_payload *outgoing) {
 	outstanding++;
 }
 
-void Wrapper::send_write_request(tlm_generic_payload *outgoing) {
+void SIMWrapper::send_write_request(tlm_generic_payload *outgoing) {
 	tlm_phase phase = BEGIN_REQ;
 	sc_time t = SC_ZERO_TIME;
 	tlm_sync_enum reply = master->nb_transport_fw(*outgoing, phase, t);
@@ -109,7 +109,7 @@ void Wrapper::send_write_request(tlm_generic_payload *outgoing) {
 	outstanding++;
 }
 
-void Wrapper::clock_posedge() {
+void SIMWrapper::clock_posedge() {
 	tlm_generic_payload *incoming = NULL;
 	if (wack_incoming.size() > 0){
 		incoming = wack_incoming.front();
@@ -123,7 +123,7 @@ void Wrapper::clock_posedge() {
 	}		
 }
 
-void Wrapper::clock_negedge() {
+void SIMWrapper::clock_negedge() {
 	/* READ */
     if (!r_queue.empty()) {
 		tlm_generic_payload* payload = r_queue.front();
@@ -204,7 +204,7 @@ void Wrapper::clock_negedge() {
 	total_cycle++;
 }
 
-void Wrapper::handle_packet(Packet *packet) {
+void SIMWrapper::handle_packet(Packet *packet) {
     switch(packet->type) {
 		case packet_read: 
 			cout << "[W" << host_id << "]:[Pkt-Read-" << r_idx << "]\n";
@@ -224,7 +224,7 @@ void Wrapper::handle_packet(Packet *packet) {
     }
 }
 
-void Wrapper::handle_wait_packet(Packet *packet) {
+void SIMWrapper::handle_wait_packet(Packet *packet) {
 	bool sync_done = false;
 	uint32_t sync_id = packet->address;
 	while (!sync_done) {
@@ -234,12 +234,12 @@ void Wrapper::handle_wait_packet(Packet *packet) {
     sync_object.free(sync_id);
 }
 
-void Wrapper::handle_signal_packet(Packet *packet) {
+void SIMWrapper::handle_signal_packet(Packet *packet) {
 	uint32_t sync_id = packet->address;
 	sync_queue.push_back(sync_id);
 }
 
-void Wrapper::handle_read_packet(Packet *packet) {
+void SIMWrapper::handle_read_packet(Packet *packet) {
 	/* Waiting for the signal from WACK */
 	handle_wait_packet(packet);	
 	
@@ -254,7 +254,7 @@ void Wrapper::handle_read_packet(Packet *packet) {
 		add_payload(TLM_READ_COMMAND, addr+(i*req_size), req_size, NULL, device_id);
 }
 
-void Wrapper::handle_write_packet(Packet *packet) {
+void SIMWrapper::handle_write_packet(Packet *packet) {
 	req_done = false;
 	uint32_t addr = packet->address;
 	uint32_t device_id = packet->device_id;
@@ -270,7 +270,7 @@ void Wrapper::handle_write_packet(Packet *packet) {
     }   
 }
 
-void Wrapper::add_payload(tlm_command cmd, uint32_t address, uint32_t size, uint8_t *data, uint32_t device_id) {
+void SIMWrapper::add_payload(tlm_command cmd, uint32_t address, uint32_t size, uint8_t *data, uint32_t device_id) {
 	tlm_generic_payload* payload = m_mm.allocate();
 	payload->acquire();
 	payload->set_address(address);
@@ -292,12 +292,12 @@ void Wrapper::add_payload(tlm_command cmd, uint32_t address, uint32_t size, uint
 	}
 }
 
-tlm_sync_enum Wrapper::nb_transport_bw(int id, tlm_generic_payload& payload, tlm_phase& phase, sc_time& t) {
+tlm_sync_enum SIMWrapper::nb_transport_bw(int id, tlm_generic_payload& payload, tlm_phase& phase, sc_time& t) {
     m_peq.notify(payload, phase, t);
 	return TLM_UPDATED;
 }
 
-void Wrapper::peq_cb(tlm_generic_payload& payload, const tlm_phase& phase) {
+void SIMWrapper::peq_cb(tlm_generic_payload& payload, const tlm_phase& phase) {
 	if (phase == BEGIN_RESP) {
 		/* Send RACK */
 		if (payload.get_command() == TLM_READ_COMMAND)
@@ -309,10 +309,10 @@ void Wrapper::peq_cb(tlm_generic_payload& payload, const tlm_phase& phase) {
 	}
 }
 
-void Wrapper::response_request(Packet *packet) {
+void SIMWrapper::response_request(Packet *packet) {
 	host->response_request(packet);
 }
 
-void Wrapper::update_status(Status _status) {
+void SIMWrapper::update_status(Status _status) {
     host->set_status(_status);
 }

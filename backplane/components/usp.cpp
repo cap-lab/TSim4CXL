@@ -158,11 +158,9 @@ void USP::flit_packing_256(bool read) {
 		/* CXL Latency (per flit) */
 		wait(port_latency, SC_NS);
 		stats->increase_write_flit();
-		cout << "FLIT PACKING----" << endl;
 		for (int i = 0; i < 3; i++) {
 			tlm_generic_payload *trans = w_queue.front();
 			w_queue.pop_front();
-			cout << "Trans:" << trans->get_address() << endl;
 			tlm_sync_enum reply = master->nb_transport_fw(*trans, phase, t);
 
 			if (w_queue.empty())

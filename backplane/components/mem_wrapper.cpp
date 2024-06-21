@@ -4,9 +4,9 @@ extern Configurations cfgs;
 extern uint32_t active_cores;
 extern uint32_t active_dram;
 
-Dram::Dram(sc_module_name name, string config_name, int id) : sc_module(name), slave("slave"), clock("clock"), 
+MEMWrapper::MEMWrapper(sc_module_name name, string config_name, int id) : sc_module(name), slave("slave"), clock("clock"), 
 													m_outstanding(0), id(id), mem_data(NULL), 
-													name(config_name), m_peq(this, &Dram::peq_cb)
+													name(config_name), m_peq(this, &MEMWrapper::peq_cb)
 {
 	init();
 
@@ -20,10 +20,10 @@ Dram::Dram(sc_module_name name, string config_name, int id) : sc_module(name), s
     sensitive << clock.neg();
 	dont_initialize();
 	
-	slave.register_nb_transport_fw(this, &Dram::nb_transport_fw);
+	slave.register_nb_transport_fw(this, &MEMWrapper::nb_transport_fw);
 }
 
-Dram::~Dram() {
+MEMWrapper::~MEMWrapper() {
 	if (stats) {
 		stats->print_mem_stats();
 		free(stats);
@@ -37,7 +37,7 @@ Dram::~Dram() {
 		delete bridge;
 }
 
-void Dram::init() {
+void MEMWrapper::init() {
 	stats = new Statistics();
 	string ramulator_path(RAMULATOR_PATH);
 	string ramulator_config_path = ramulator_path + "configs/";
@@ -49,7 +49,7 @@ void Dram::init() {
 	init_memdata();
 }
 
-void Dram::init_memdata() {
+void MEMWrapper::init_memdata() {
 	if (mem_data == NULL) {
 		uint64_t dram_size = cfgs.get_dram_size(id);
 		mem_data = (uint8_t *) malloc(sizeof(uint8_t) * dram_size);
@@ -57,7 +57,7 @@ void Dram::init_memdata() {
 	}
 }
 
-void Dram::clock_posedge() {
+void MEMWrapper::clock_posedge() {
     /* Read */
     if (!r_queue.empty()) {
 		tlm_generic_payload *r_outgoing = r_queue.front();
@@ -72,7 +72,7 @@ void Dram::clock_posedge() {
     }
 }
 
-void Dram::clock_negedge() {
+void MEMWrapper::clock_negedge() {
 	if (!rack_queue.empty())  {
 		tlm_generic_payload* payload = rack_queue.front();
 		rack_queue.pop_front();
@@ -88,7 +88,7 @@ void Dram::clock_negedge() {
 	}
 }
 
-tlm_generic_payload* Dram::gen_trans(uint64_t addr, tlm_command cmd, uint32_t size, uint32_t id) {
+tlm_generic_payload* MEMWrapper::gen_trans(uint64_t addr, tlm_command cmd, uint32_t size, uint32_t id) {
     tlm_generic_payload *trans;
 
     trans = m_mm.allocate();
@@ -102,13 +102,13 @@ tlm_generic_payload* Dram::gen_trans(uint64_t addr, tlm_command cmd, uint32_t si
     return trans;
 }
 
-tlm_sync_enum Dram::nb_transport_fw(tlm_generic_payload& trans, tlm_phase& phase, sc_time& t) {
+tlm_sync_enum MEMWrapper::nb_transport_fw(tlm_generic_payload& trans, tlm_phase& phase, sc_time& t) {
     m_peq.notify(trans, phase, t);
 	
 	return TLM_UPDATED;
 }
 
-void Dram::simulate_dram() {
+void MEMWrapper::simulate_dram() {
     double period = 1000.0 / cfgs.get_dram_freq(id);
 
 	/* Simulate one cycle for ramulator and check if there's any completed payload */
@@ -159,7 +159,7 @@ void Dram::simulate_dram() {
     }
 }
 
-void Dram::respond_read_request(tlm_generic_payload *outgoing) {
+void MEMWrapper::respond_read_request(tlm_generic_payload *outgoing) {
 	uint64_t addr = outgoing->get_address();
 	tlm_phase phase = BEGIN_RESP;
 	sc_time t = SC_ZERO_TIME;
@@ -172,14 +172,14 @@ void Dram::respond_read_request(tlm_generic_payload *outgoing) {
 	
 }
 
-void Dram::respond_write_request(tlm_generic_payload *outgoing) {
+void MEMWrapper::respond_write_request(tlm_generic_payload *outgoing) {
 	tlm_phase phase = BEGIN_RESP;
 	sc_time t = SC_ZERO_TIME;
 	tlm_sync_enum reply = slave->nb_transport_bw(*outgoing, phase, t);
 	assert(reply == TLM_UPDATED);
 }
 
-void Dram::update_payload_delay(tlm_generic_payload *payload, bool is_read) {
+void MEMWrapper::update_payload_delay(tlm_generic_payload *payload, bool is_read) {
 	map<tlm_generic_payload *, uint32_t> *trans_map;
     if (is_read)
         trans_map = &r_trans_map;
@@ -195,7 +195,7 @@ void Dram::update_payload_delay(tlm_generic_payload *payload, bool is_read) {
 	}
 }
 
-void Dram::peq_cb(tlm_generic_payload& trans, const tlm_phase& phase) {
+void MEMWrapper::peq_cb(tlm_generic_payload& trans, const tlm_phase& phase) {
 	/* Generate payload for simulation */
 	tlm_generic_payload *sim_trans = gen_trans(trans.get_address(), trans.get_command(), trans.get_data_length(), trans.get_id());
 	if (phase == tlm::BEGIN_REQ) {

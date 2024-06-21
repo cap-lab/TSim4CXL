@@ -16,7 +16,7 @@ using namespace std;
 using namespace tlm;
 using namespace sc_core;
 
-class Wrapper: public sc_module {
+class SIMWrapper: public sc_module {
 
 enum ChannelState
 {
@@ -26,7 +26,7 @@ enum ChannelState
 };
 		
 public:
-    SC_HAS_PROCESS(Wrapper);
+    SC_HAS_PROCESS(SIMWrapper);
 
    	sc_in<bool> clock;
 
@@ -45,10 +45,10 @@ public:
     deque<tlm_generic_payload*> wack_incoming;
     deque<tlm_generic_payload*> rack_incoming;
 	
-	tlm_utils::multi_passthrough_initiator_socket<Wrapper> master;
+	tlm_utils::multi_passthrough_initiator_socket<SIMWrapper> master;
 
-    Wrapper(sc_module_name _name, int id, int num);
-    ~Wrapper();
+    SIMWrapper(sc_module_name _name, int id, int num);
+    ~SIMWrapper();
 
     void clock_posedge();
     void clock_negedge();
@@ -95,5 +95,5 @@ private:
 	uint64_t total_cycle;
 	string name;
 	mm m_mm;
- 	tlm_utils::peq_with_cb_and_phase<Wrapper> m_peq;
+ 	tlm_utils::peq_with_cb_and_phase<SIMWrapper> m_peq;
 };
