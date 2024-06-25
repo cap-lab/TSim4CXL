@@ -3,11 +3,11 @@
 #include "systemc.h"
 #include "tlm.h"
 
-#include <components/sim_wrapper.h>
-#include <components/mem_wrapper.h>
+#include <components/wrapper/sim_wrapper.h>
+#include <components/wrapper/mem_wrapper.h>
 #include <components/interconnector.h>
-#include <components/usp.h>
-#include <components/dsp.h>
+#include <components/port/usp.h>
+#include <components/port/dsp.h>
 #include <utilities/sync_object.h>
 
 using namespace sc_core;

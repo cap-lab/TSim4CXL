@@ -86,7 +86,7 @@ void Configurations::init_configurations()
     link_efficiency = root["link_efficiency"].asDouble();
     raw_bandwidth = root["PCIe_raw_bandwidth"].asDouble();
     port_latency = root["cxl_port_latency"].asUInt();
-    ic_latency = root["cxl_ic_latency"].asUInt();
+    dev_ic_latency = root["cxl_dev_ic_latency"].asUInt();
     link_bandwidth = link_efficiency * raw_bandwidth;
 	
 	flit_size = (flit_mode == 68) ? 64 : (flit_mode == 256) ? 240 : flit_size;
@@ -99,7 +99,7 @@ void Configurations::init_configurations()
 	cout << "Raw Bandwidth : " << raw_bandwidth << " (B/ns)\n";
 	cout << "Link Bandwidth : " << link_bandwidth << " (B/ns)\n";
 	cout << "CXL Port Latency : " << port_latency << " (ns)\n";
-	cout << "CXL Device Interconnector Latency : " << ic_latency << " (ns)\n";
+	cout << "CXL Device Interconnector Latency : " << dev_ic_latency << " (ns)\n";
 
 	cout << "--------HOST INFO--------\n";
     for (int i = 0; i<host_num; i++){

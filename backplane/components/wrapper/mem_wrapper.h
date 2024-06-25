@@ -66,7 +66,6 @@ private:
 	uint64_t active_cycle;
 	uint64_t total_cycle;
 	uint32_t m_outstanding;
-	uint32_t ic_latency;
 	string name;
 
 	Statistics *stats;	

@@ -34,23 +34,23 @@ public:
     void print_stats();
     void print_mem_stats();
     void set_name(std::string n) {name = n;}
-    void increase_read_request() { stats.num_read_request++; }
-    void increase_read_flit() { stats.num_read_flit++; }
-    void increase_read_packet() { stats.num_read_packet++; }
-    void increase_write_request() { stats.num_write_request++; }
-    void increase_write_flit() { stats.num_write_flit++; }
-    void increase_write_packet() { stats.num_write_packet++; }
+    void increase_r_request() { stats.num_read_request++; }
+    void increase_r_flit() { stats.num_read_flit++; }
+    void increase_r_packet() { stats.num_read_packet++; }
+    void increase_w_request() { stats.num_write_request++; }
+    void increase_w_flit() { stats.num_write_flit++; }
+    void increase_w_packet() { stats.num_write_packet++; }
     void update_total_read_size(uint32_t size) { stats.total_read_size += size; }
     void update_total_write_size(uint32_t size) { stats.total_write_size += size; }
     void update_read_latency(uint32_t latency) { stats.total_read_latency += latency; }
     void update_write_latency(uint32_t latency) { stats.total_write_latency += latency; }
-	uint32_t get_read_flit_num() { return stats.num_read_flit; }
-	uint32_t get_write_flit_num() { return stats.num_write_flit; }
+	uint32_t get_r_flit_num() { return stats.num_read_flit; }
+	uint32_t get_w_flit_num() { return stats.num_write_flit; }
 
 	Stats stats;
 
 private:
-	std::string name;
+	string name;
 };
 
 #endif

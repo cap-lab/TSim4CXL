@@ -26,5 +26,16 @@ private:
 
 	tlm_sync_enum nb_transport_fw(int id, tlm_generic_payload& trans, tlm_phase& phase, sc_time& t);
 	tlm_sync_enum nb_transport_bw(int id, tlm_generic_payload& trans, tlm_phase& phase, sc_time& t);
+	
+	void init();
+	void fw_thread();
+
+	double period;
+	uint32_t port_latency;
+	uint32_t dev_ic_latency;
+	uint32_t ctrl_latency;
+
+	deque<tlm_generic_payload*> r_queue;
+	deque<tlm_generic_payload*> w_queue;
 };
 

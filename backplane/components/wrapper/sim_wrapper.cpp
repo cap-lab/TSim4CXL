@@ -40,9 +40,9 @@ SIMWrapper::~SIMWrapper() {
 }
 
 void SIMWrapper::init() {
-	host = new Host(string(name), host_id);
+	host = new Host(name, host_id);
 	stats = new Statistics();
-	stats->set_name(string(name));
+	stats->set_name(name);
 
 	req_size = cfgs.get_dram_req_size();
 	period = cfgs.get_period(host_id);
@@ -178,11 +178,9 @@ void SIMWrapper::clock_negedge() {
 		tlm_phase phase = END_RESP;
 		sc_time t = SC_ZERO_TIME;
 		wack_num++;	
-		
 		tlm_sync_enum reply = master->nb_transport_fw(*payload, phase, t);
 		assert(reply == TLM_COMPLETED);
 		outstanding--;
-		
 		/* SIGNAL(ready to read) */
 		if (wack_num == packet_size/req_size) { 
 			uint32_t sig = signal_queue.front();
@@ -247,7 +245,7 @@ void SIMWrapper::handle_read_packet(Packet *packet) {
     uint32_t addr = packet->address;
 	uint32_t device_id = packet->device_id;
 	
-	stats->increase_read_packet();
+	stats->increase_r_packet();
 	stats->update_total_read_size(packet_size);
 
 	for (int i = 0; i < packet_size/req_size; i++)
@@ -260,7 +258,7 @@ void SIMWrapper::handle_write_packet(Packet *packet) {
 	uint32_t device_id = packet->device_id;
 
 	signal_queue.push_back((int)addr);
-	stats->increase_write_packet();
+	stats->increase_w_packet();
 	stats->update_total_write_size(packet_size);
 	
 	for (int i = 0; i < packet_size/req_size; i++) {

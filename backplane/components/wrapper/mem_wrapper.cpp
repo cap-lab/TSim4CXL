@@ -39,13 +39,11 @@ MEMWrapper::~MEMWrapper() {
 
 void MEMWrapper::init() {
 	stats = new Statistics();
+	stats->set_name("Ramulator_" + name);
 	string ramulator_path(RAMULATOR_PATH);
 	string ramulator_config_path = ramulator_path + "configs/";
     ramulator_config_path = ramulator_config_path + name + ".yaml";
 	bridge = new Bridge(ramulator_config_path.c_str(), id);
-	stats->set_name(string(name)+string("_ramulator_" + name));
-	ic_latency = cfgs.get_cxl_ic_latency();
-	
 	init_memdata();
 }
 
@@ -120,7 +118,6 @@ void MEMWrapper::simulate_dram() {
 
 		if (trans) {
 			if (trans->get_command() == TLM_READ_COMMAND) {
-				wait(ic_latency, SC_NS);
 				rack_queue.push_back(trans);
 			}
 			else {
@@ -133,14 +130,12 @@ void MEMWrapper::simulate_dram() {
 			trans = mem_request.front();
 			mem_request.pop_front();
 			if (trans->get_command() == TLM_READ_COMMAND) {
-				stats->increase_read_request();
+				stats->increase_r_request();
 				stats->update_total_read_size(trans->get_data_length());
 				r_trans_map[trans] = (int) (sc_time_stamp().to_double() / 1000);
-
-				wait(ic_latency, SC_NS);
 			}
 			else {
-				stats->increase_write_request();
+				stats->increase_w_request();
 				stats->update_total_write_size(trans->get_data_length());
 				w_trans_map[trans] = (int) (sc_time_stamp().to_double() / 1000);
 			}

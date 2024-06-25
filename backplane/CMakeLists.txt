@@ -37,11 +37,11 @@ add_executable(
 	cxlsim
 	sc_main.cpp
 	components/host.cpp
-	components/sim_wrapper.cpp
-	components/mem_wrapper.cpp
+	components/wrapper/sim_wrapper.cpp
+	components/wrapper/mem_wrapper.cpp
 	components/interconnector.cpp
-	components/usp.cpp
-	components/dsp.cpp
+	components/port/usp.cpp
+	components/port/dsp.cpp
 	utilities/statistics.cpp
 	utilities/mm.cpp
 	utilities/shmem_communicator.cpp

@@ -36,7 +36,7 @@ public:
     uint32_t get_packet_size() { return packet_size; }
     uint32_t get_dram_req_size() { return dram_req_size; };
     uint32_t get_port_latency() { return port_latency; };
-    uint32_t get_cxl_ic_latency() { return ic_latency; };
+    uint32_t get_cxl_dev_ic_latency() { return dev_ic_latency; };
     uint32_t get_cpu_latency(int id);
     uint64_t get_dram_size(int id);
     double get_period(int id ); 
@@ -52,7 +52,7 @@ private:
 	uint32_t dram_req_size;
 	uint32_t host_latency;
     uint32_t port_latency;
-    uint32_t ic_latency;
+    uint32_t dev_ic_latency;
     uint32_t link_latency; 
     uint32_t host_num;
     uint32_t dram_num;

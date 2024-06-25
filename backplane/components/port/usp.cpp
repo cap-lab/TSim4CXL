@@ -3,7 +3,8 @@
 extern Configurations cfgs;
 
 USP::USP(sc_module_name name, int id) : sc_module(name), master("master"), slave("slave"), clock("clock"),
-										id(id), name(string(name)), stack(0), r_cycle(0), w_cycle(0)
+										id(id), name(string(name)),
+										f_idx(0), r_stack(0), w_stack(0), r_msg(0), w_msg(0)
 {
 	init();
 	SC_THREAD(fw_thread);
@@ -27,6 +28,12 @@ void USP::init() {
 	req_num = cfgs.get_packet_size()/cfgs.get_dram_req_size();
 	stats = new Statistics();
 	stats->set_name(name);
+
+	/* Flit-Packing variables (payload num per flit) */	
+	/* 68B/256B READ req (wo Data) */
+	r_msg = (flit_mode == 68) ? 2 : (flit_mode == 256) ? 8 : r_msg;
+	/* 256B WRITE req (w Data) */
+	w_msg = 3;
 }
 
 void USP::fw_thread() {
@@ -39,29 +46,31 @@ void USP::fw_thread() {
 			}
 
 			/* WRITE (Last Flit) */
-			else if (stack == 4) {
+			else if (f_idx == 4) {
 				flit_packing_68(false);
 			}
 
 			/* READ */
-			if(!r_queue.empty() && r_cycle == 2) {
+			if(!r_queue.empty() && r_stack >= r_msg) {
 				flit_packing_68(true);
-				r_cycle = 0;
 			}
 		}
 
 		/* 256B Flit */
 		else {
 			/* WRITE */
-			if (!w_queue.empty() && ((w_cycle == 3) || (stats->get_write_flit_num() == req_num/3 && w_cycle == req_num%3))) {
+			if (!w_queue.empty() && w_stack >= w_msg) {
 				flit_packing_256(false);
-				w_cycle = 0;
+			}
+			
+			/* WRITE (Last Flit) */	
+			if (!w_queue.empty() && ((stats->get_w_flit_num()+1)%(req_num/w_msg+1) == 0 && w_stack >= req_num%w_msg)) {
+				flit_packing_256(false);
 			}
 
 			/* READ */
-			if(!r_queue.empty() && r_cycle == 8) {
+			if(!r_queue.empty() && r_stack >= r_msg) {
 				flit_packing_256(true);
-				r_cycle = 0;
 			}
 		}
 		wait(period, SC_NS);
@@ -73,46 +82,44 @@ void USP::flit_packing_68(bool read) {
 	sc_time t = SC_ZERO_TIME;
 
 	/* READ */
-	/* 2 Req packed in a single flit */
 	if(read) { 
 		/* CXL Latency (per flit) */
-		wait(port_latency, SC_NS);
-		stats->increase_read_flit();
+		wait(port_latency+link_latency, SC_NS);
+		stats->increase_r_flit();
 
-		for (int i = 0; i < 2; i++) {
+		for (int i = 0; i < r_msg; i++) {
 			tlm_generic_payload *trans = r_queue.front();
 			r_queue.pop_front();
 			tlm_sync_enum reply = master->nb_transport_fw(*trans, phase, t);
-
+			r_stack--;
 			if (r_queue.empty())
 				break;
 		}
 	}
 
 	/* WRITE */
-	/* RwD with 4 data slots */
 	else {
 		/* Last Flit */
-		if (stack == 4) {
-			stack = 0;
+		if (f_idx == 4) {
+			f_idx = 0;
 			tlm_generic_payload *trans = pending_queue.front();	
 			pending_queue.pop_front();
 			
 			/* CXL Latency (per flit) */
-			wait(port_latency, SC_NS);
-			stats->increase_write_flit();
+			wait(port_latency+link_latency, SC_NS);
+			stats->increase_w_flit();
 
 			tlm_sync_enum reply = master->nb_transport_fw(*trans, phase, t);
 		}
 
 		else {
-			if (stack > 0) {
+			if (f_idx > 0) {
 				tlm_generic_payload *trans = pending_queue.front();	
 				pending_queue.pop_front();
 				
 				/* CXL Latency (per flit) */
-				wait(port_latency, SC_NS);
-				stats->increase_write_flit();
+				wait(port_latency+link_latency, SC_NS);
+				stats->increase_w_flit();
 				
 				tlm_sync_enum reply = master->nb_transport_fw(*trans, phase, t);
 			}
@@ -120,13 +127,13 @@ void USP::flit_packing_68(bool read) {
 			w_queue.pop_front();
 			pending_queue.push_back(trans);
 
-			if (stack == 0) {
+			if (f_idx == 0) {
 				/* CXL Latency (per flit) */
-				wait(port_latency, SC_NS);
-				stats->increase_write_flit();
+				wait(port_latency+link_latency, SC_NS);
+				stats->increase_w_flit();
 			}
 
-			stack++;
+			f_idx++;
 		}
 	}
 }
@@ -136,33 +143,32 @@ void USP::flit_packing_256(bool read) {
 	sc_time t = SC_ZERO_TIME;
 
 	/* READ */
-	/* 8 Reqs packed in a single flit */
 	if(read) { 
 		/* CXL Latency (per flit) */
-		wait(port_latency, SC_NS);
-		stats->increase_read_flit();
+		wait(port_latency+link_latency, SC_NS);
+		stats->increase_r_flit();
 
-		for (int i = 0; i < 8; i++) {
+		for (int i = 0; i < r_msg; i++) {
 			tlm_generic_payload *trans = r_queue.front();
 			r_queue.pop_front();
 			tlm_sync_enum reply = master->nb_transport_fw(*trans, phase, t);
-
+			r_stack--;
 			if (r_queue.empty())
 				break;
 		}
 	}
 
 	/* WRITE */
-	/* 3 RwD packed in a single flit */
 	else {
 		/* CXL Latency (per flit) */
-		wait(port_latency, SC_NS);
-		stats->increase_write_flit();
-		for (int i = 0; i < 3; i++) {
+		wait(port_latency+link_latency, SC_NS);
+		stats->increase_w_flit();
+		
+		for (int i = 0; i < w_msg; i++) {
 			tlm_generic_payload *trans = w_queue.front();
 			w_queue.pop_front();
 			tlm_sync_enum reply = master->nb_transport_fw(*trans, phase, t);
-
+			w_stack--;
 			if (w_queue.empty())
 				break;
 		}
@@ -176,14 +182,13 @@ tlm_sync_enum USP::nb_transport_fw(int id, tlm_generic_payload& trans, tlm_phase
 	/* READ */
 	if (trans.get_command() == TLM_READ_COMMAND) {
 		r_queue.push_back(&trans);
-		r_cycle++;		
+		r_stack++;		
 	}
 
 	/* WRITE */
 	else {
 		w_queue.push_back(&trans);
-		cout << "Push back to w_queue::" << trans.get_address() << endl;
-		w_cycle++;
+		w_stack++;
 	}
 
 	return TLM_UPDATED;

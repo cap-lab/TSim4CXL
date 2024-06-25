@@ -31,9 +31,11 @@ private:
 	uint32_t flit_mode;
 	uint32_t port_latency;
 	uint32_t link_latency;
-	uint32_t stack;
-	uint32_t r_cycle;
-	uint32_t w_cycle;
+	uint32_t f_idx;
+	uint32_t r_stack;
+	uint32_t w_stack;
+	uint32_t r_msg;
+	uint32_t w_msg;
 	double period;
 	string name;
 
