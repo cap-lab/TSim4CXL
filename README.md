@@ -21,7 +21,7 @@ We provide both **timing** and **functional simulations** based on user paramete
 ## Simulation Configuration
 - All parameters are reconfigurable by users.
 - **system.json**
-```
+```bash
 host_num : 2,  
 packet_size : 1024, // Byte
 
@@ -47,7 +47,7 @@ cpu1 :
 ```
   
 - **memory.json**
-```
+```bash
 dram_num : 1,
 dram0 :
 {
@@ -60,13 +60,13 @@ dram0 :
 ## Trace Files
 - **Trace (Type : Address : Size : Data)**
   - Data is only needed for **Write** operations  
-```
+```bash
 W:0:1024: 
 R:1024:1024:
 Terminate:0:0:
 ```
 - **Delta (nanoseconds)**
-```
+```bash
 1000
 1000
 1000
@@ -74,7 +74,7 @@ Terminate:0:0:
 
 ## How to Compile
 - **cxlsim**
-```
+```bash
 git clone https://github.com/cap-lab/CXLSim.git
 cd CXLSim
 mkdir shared
@@ -84,7 +84,7 @@ cmake ..
 make
 ```
 - **Ramulator2**
-```
+```bash
 git clone https://github.com/CMU-SAFARI/ramulator2.git
 cd ramulator2
 mkdir build && cd build
@@ -102,7 +102,7 @@ make
     - **etc/Bridge.h -> ramulator2/src/Bridge.h** *(need to add)*
 
 ## How to Run
-```
+```bash
 cd /backplane/build
 ./cxlsim
 ```
