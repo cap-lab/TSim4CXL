@@ -64,7 +64,7 @@ private:
     void handle_write_packet(Packet *packet);
 	void handle_signal_packet(Packet *packet);
 	void handle_wait_packet(Packet *packet);
-	void add_payload(tlm_command cmd, uint32_t address, uint32_t size, uint8_t* data, uint32_t device_id);
+	void add_payload(tlm_command cmd, uint32_t address, uint32_t size, uint8_t* data, uint32_t burst_size, uint32_t device_id);
     void update_status(Status _status);
 	void init();
 	
@@ -96,4 +96,7 @@ private:
 	string name;
 	mm m_mm;
  	tlm_utils::peq_with_cb_and_phase<SIMWrapper> m_peq;
+	
+	sc_time read_start;
+	bool read_first = true;;
 };

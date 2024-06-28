@@ -14,26 +14,27 @@
 #include <cstdlib>
 #include <vector>
 #include <iterator>
+#include <regex>
+#include <cmath>
 #include "packet_buffer.h"
 
 using namespace std;
 
-class traceManager {
+class packetManager {
 public:
-    traceManager(int coreID, string name);
+    packetManager(int coreID, string name);
+    bool is_empty();
     bool prepare_connection(int coreID, string name);
-    void readRequest(uint32_t address, uint32_t size, uint32_t device, uint64_t cycle);
-    void writeRequest(uint32_t address, uint8_t* data, uint32_t size, uint32_t device, uint64_t cycle);
+    void readRequest(uint32_t address, uint32_t size, uint32_t device, uint64_t delta);
+    void writeRequest(uint32_t address, uint8_t* data, uint32_t size, uint32_t device, uint64_t delta);
     void signalRequest(uint32_t signalID);
     void waitRequest(uint32_t signalID);
-    void terminateRequest(uint64_t cycle);
-    
+    void terminateRequest(uint64_t delta);
     void* establish_shm_segment(char *name, int size);
-    int sendPacket(Packet * pPacket);
-    int recvPacket(Packet* pPacket);
+    void sendPacket(Packet * pPacket);
+    void recvPacket(Packet* pPacket);
     void readPacketData(uint8_t *data);
-    Packet* makePacket(PacketType type, uint32_t address, uint8_t* data, uint32_t size, uint32_t device, uint64_t cycle);
-    bool is_empty();
+    Packet* makePacket(PacketType type, uint32_t address, uint8_t* data, uint32_t size, uint32_t device, uint64_t delta);
 
 private:
     int coreID;

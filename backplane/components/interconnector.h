@@ -31,11 +31,14 @@ private:
 	void fw_thread();
 
 	double period;
+	uint32_t link_latency;
 	uint32_t port_latency;
 	uint32_t dev_ic_latency;
 	uint32_t ctrl_latency;
 
 	deque<tlm_generic_payload*> r_queue;
 	deque<tlm_generic_payload*> w_queue;
+
+	uint32_t count_fw = 0;
 };
 

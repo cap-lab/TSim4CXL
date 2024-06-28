@@ -22,6 +22,7 @@ public:
 	tlm_utils::multi_passthrough_target_socket<DSP> slave;
     void flit_packing_68(bool read);
     void flit_packing_256(bool read);
+    void fw_thread();
     void bw_thread();
     void init();
 
@@ -31,19 +32,25 @@ private:
 	uint32_t flit_mode;
 	uint32_t port_latency;
 	uint32_t link_latency;
-	uint32_t f_idx;
-	uint32_t w_stack;
 	uint32_t w_msg;
 	uint32_t r_msg;
+	uint32_t w_flit;
+	uint32_t r_flit;
+	uint32_t dram_req_size;
 	double period;
 	string name;
 
 	tlm_sync_enum nb_transport_fw(int id, tlm_generic_payload& trans, tlm_phase& phase, sc_time& t);
 	tlm_sync_enum nb_transport_bw(int id, tlm_generic_payload& trans, tlm_phase& phase, sc_time& t);
-	
+
+	deque<tlm_generic_payload*> r_queue;
+	deque<tlm_generic_payload*> w_queue;
 	deque<tlm_generic_payload*> rack_queue;
 	deque<tlm_generic_payload*> wack_queue;
 	deque<tlm_generic_payload*> pending_queue;
 
 	Statistics *stats;	
+
+	uint32_t count_fw = 0; 
+	uint32_t total_cycle = 0;
 };

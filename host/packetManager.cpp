@@ -1,12 +1,14 @@
 #include "packetManager.h"
 
-traceManager::traceManager(int coreID, string name) {
+extern uint32_t packet_size;
+
+packetManager::packetManager(int coreID, string name) {
     ts.tv_sec = 0;
     ts.tv_nsec = 1;
     prepare_connection(coreID, name);
 }
 
-bool traceManager::prepare_connection(int coreID, string name) {
+bool packetManager::prepare_connection(int coreID, string name) {
     struct passwd *pd = getpwuid(getuid());  // Check for NULL!
 
     ib_name = new char[64];
@@ -46,7 +48,7 @@ bool traceManager::prepare_connection(int coreID, string name) {
     return true;
 }
 
-void *traceManager::establish_shm_segment(char *name, int size) {
+void *packetManager::establish_shm_segment(char *name, int size) {
     int fd = shm_open(name, O_RDWR | O_CREAT, 0600);
     if (fd < 0)
         cerr << "shm_open fails with " << name << endl;
@@ -60,64 +62,63 @@ void *traceManager::establish_shm_segment(char *name, int size) {
     return segment;
 }
 
-bool traceManager::is_empty() {
+bool packetManager::is_empty() {
     return pb_is_empty(recvBuffer);
 }
 
-int traceManager::sendPacket(Packet * pPacket) {
+void packetManager::sendPacket(Packet * pPacket) {
     while (pb_is_full(sendBuffer)){nanosleep(&ts, NULL); };
     pb_write(sendBuffer, pPacket);
-	return sizeof(pPacket);
 }
 
-int traceManager::recvPacket(Packet * pPacket) {
+void packetManager::recvPacket(Packet * pPacket) {
     while (pb_is_empty(recvBuffer)) { nanosleep(&ts, NULL); };
 	pb_read(recvBuffer, pPacket);
-	return sizeof(pPacket);
 }
 
-void traceManager::readPacketData(uint8_t *data) {
+void packetManager::readPacketData(uint8_t *data) {
     Packet r_packet;
     memset(&r_packet, 0, sizeof(Packet));
     recvPacket(&r_packet);
-	memcpy(data, r_packet.data, r_packet.size);
+	memcpy(data, r_packet.data, packet_size);
 }
 
-void traceManager::readRequest(uint32_t address, uint32_t size, uint32_t device, uint64_t cycle) {
-    Packet* packet = makePacket(packet_read, address, NULL, size, device, cycle);
+void packetManager::readRequest(uint32_t address, uint32_t size, uint32_t device, uint64_t delta) {
+    Packet* packet = makePacket(packet_read, address, NULL, size, device, delta);
     sendPacket(packet);
 }
 
-void traceManager::writeRequest(uint32_t address, uint8_t* data, uint32_t size, uint32_t device, uint64_t cycle) {
-    Packet* packet = makePacket(packet_write, address, data, size, device, cycle);
+void packetManager::writeRequest(uint32_t address, uint8_t* data, uint32_t size, uint32_t device, uint64_t delta) {
+    Packet* packet = makePacket(packet_write, address, data, size, device, delta);
 	sendPacket(packet);
 }
 
-void traceManager::signalRequest(uint32_t signalID) {
+void packetManager::signalRequest(uint32_t signalID) {
     Packet* packet = makePacket(packet_bar_signal, signalID, NULL, 0, 0, 0);
     sendPacket(packet);    
 }
 
-void traceManager::waitRequest(uint32_t waitID) {
+void packetManager::waitRequest(uint32_t waitID) {
     Packet* packet = makePacket(packet_bar_wait, waitID, NULL, 0, 0, 0);
     sendPacket(packet);    
 }
 
-void traceManager::terminateRequest(uint64_t cycle) {
-    Packet* packet = makePacket(packet_terminated, 0, NULL, 0, 0, cycle);
+void packetManager::terminateRequest(uint64_t delta) {
+    Packet* packet = makePacket(packet_terminated, 0, NULL, 0, 0, delta);
     sendPacket(packet);   
 }
 
-Packet* traceManager::makePacket(PacketType t, uint32_t address, uint8_t* data, uint32_t size, uint32_t device, uint64_t cycle) {
+Packet* packetManager::makePacket(PacketType t, uint32_t address, uint8_t* data, uint32_t size, uint32_t device, uint64_t delta) {
     Packet* packet = new Packet;
     memset(packet, 0, sizeof(Packet));
     packet->type = t;
     packet->size = size;
-    packet->cycle = cycle;
+    packet->cycle = delta;
     packet->address = address;
     packet->device_id = device;
-    if (data != NULL)
-        memcpy(packet->data, data, size);
+
+	if (data != NULL)
+		memcpy(packet->data, data, packet_size);
 
     return packet;
 }

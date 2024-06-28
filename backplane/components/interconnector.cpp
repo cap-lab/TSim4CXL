@@ -15,6 +15,7 @@ Interconnector::~Interconnector() {}
 
 void Interconnector::init() {
 	period = cfgs.get_period(0);
+	link_latency = cfgs.get_link_latency();
 	port_latency = cfgs.get_port_latency();
 	dev_ic_latency = cfgs.get_cxl_dev_ic_latency();
 	ctrl_latency = port_latency + dev_ic_latency;
@@ -27,7 +28,11 @@ void Interconnector::fw_thread() {
 	while(1) {
 		/* READ */
 		if (!r_queue.empty()) {
-			wait(ctrl_latency, SC_NS);
+			if (count_fw%8 == 0)
+				wait(ctrl_latency, SC_NS);
+			else
+				wait(link_latency, SC_NS);
+			count_fw++;
 
 			tlm_generic_payload *trans = r_queue.front();
 			r_queue.pop_front();
@@ -37,11 +42,12 @@ void Interconnector::fw_thread() {
 		
 		/* WRITE */
 		if (!w_queue.empty()) {
-			wait(ctrl_latency, SC_NS);
-
+			//wait(ctrl_latency, SC_NS);
+			
 			tlm_generic_payload *trans = w_queue.front();
 			w_queue.pop_front();
 			int id = device_map[trans];
+
 			tlm_sync_enum reply = master[id]->nb_transport_fw(*trans, phase, t);
 		}
 		wait(period, SC_NS);

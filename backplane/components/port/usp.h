@@ -23,19 +23,23 @@ public:
     void flit_packing_68(bool read);
     void flit_packing_256(bool read);
     void fw_thread();
+    void bw_thread();
 	void init();
 
 private:
 	uint32_t id;
-	uint32_t req_num;
 	uint32_t flit_mode;
+	uint32_t remainder;
 	uint32_t port_latency;
 	uint32_t link_latency;
 	uint32_t f_idx;
-	uint32_t r_stack;
-	uint32_t w_stack;
 	uint32_t r_msg;
 	uint32_t w_msg;
+	uint32_t last_flit;
+	uint32_t w_flit_stack;
+	uint32_t dram_req_size;
+	uint32_t fw_cnt;
+	uint32_t bw_cnt;
 	double period;
 	string name;
 
@@ -44,6 +48,8 @@ private:
 	
 	deque<tlm_generic_payload*> r_queue;
 	deque<tlm_generic_payload*> w_queue;
+	deque<tlm_generic_payload*> rack_queue;
+	deque<tlm_generic_payload*> wack_queue;
 	deque<tlm_generic_payload*> pending_queue;
 
 	Statistics *stats;	

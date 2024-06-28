@@ -5,6 +5,7 @@ extern SyncObject sync_object;
 extern uint32_t active_cores;
 extern uint32_t active_dram;
 map<tlm_generic_payload *, uint32_t> device_map;
+map<uint32_t, uint32_t> addr_bst_map;
 
 SIMWrapper::SIMWrapper(sc_module_name name, int id, int num) : sc_module(name), host_id(id), name(string(name)),
 											active_cycle(0), total_cycle(0), outstanding(0),
@@ -62,7 +63,7 @@ void SIMWrapper::periodic_process() {
 			while (true) {
 				if (host->irecv_packet(&packet) != 0) {
 					uint64_t delta = packet.cycle;
-					if (delta != 0)
+					//if (delta != 0)
 						//wait(delta, SC_NS);
 
 					received = true;
@@ -90,6 +91,7 @@ void SIMWrapper::periodic_process() {
 		wait(period, SC_NS);
     }
 	cout << "Simulator stopped by Host-" << host_id << '\n'; 
+	//cout << "Read:" << (uint64_t)((sc_time_stamp() - read_start).to_double()/1000) << " ns"<< endl;
 	sc_stop();
 }
 
@@ -147,7 +149,6 @@ void SIMWrapper::clock_negedge() {
 
 		tlm_sync_enum reply = master->nb_transport_fw(*payload, phase, t);
 		assert(reply == TLM_COMPLETED);
-		
 		int burst = packet_size/req_size; 	
 		uint8_t* d_data = payload->get_data_ptr();
 		
@@ -181,6 +182,7 @@ void SIMWrapper::clock_negedge() {
 		tlm_sync_enum reply = master->nb_transport_fw(*payload, phase, t);
 		assert(reply == TLM_COMPLETED);
 		outstanding--;
+		//cout << "WACK::" << payload->get_address() << endl;
 		/* SIGNAL(ready to read) */
 		if (wack_num == packet_size/req_size) { 
 			uint32_t sig = signal_queue.front();
@@ -240,22 +242,31 @@ void SIMWrapper::handle_signal_packet(Packet *packet) {
 void SIMWrapper::handle_read_packet(Packet *packet) {
 	/* Waiting for the signal from WACK */
 	handle_wait_packet(packet);	
+
+	if (read_first) {
+//		read_start = sc_time_stamp();
+		read_first = false;
+		wait(10000, SC_NS);
+	}
 	
 	req_done = false;
     uint32_t addr = packet->address;
 	uint32_t device_id = packet->device_id;
+	uint32_t burst_size = packet->size;
 	
 	stats->increase_r_packet();
 	stats->update_total_read_size(packet_size);
 
-	for (int i = 0; i < packet_size/req_size; i++)
-		add_payload(TLM_READ_COMMAND, addr+(i*req_size), req_size, NULL, device_id);
+	for (int i = 0; i < packet_size/req_size; i++) {
+		add_payload(TLM_READ_COMMAND, addr+(i*req_size), req_size, NULL, burst_size, device_id);
+	}
 }
 
 void SIMWrapper::handle_write_packet(Packet *packet) {
 	req_done = false;
 	uint32_t addr = packet->address;
 	uint32_t device_id = packet->device_id;
+	uint32_t burst_size = packet->size;
 
 	signal_queue.push_back((int)addr);
 	stats->increase_w_packet();
@@ -264,11 +275,11 @@ void SIMWrapper::handle_write_packet(Packet *packet) {
 	for (int i = 0; i < packet_size/req_size; i++) {
 		uint8_t* data = new uint8_t[req_size];
 		memcpy(data, (packet->data)+(req_size*i), req_size);		
-		add_payload(TLM_WRITE_COMMAND, addr+(i*req_size), req_size, data, device_id);
+		add_payload(TLM_WRITE_COMMAND, addr+(i*req_size), req_size, data, burst_size, device_id);
     }   
 }
 
-void SIMWrapper::add_payload(tlm_command cmd, uint32_t address, uint32_t size, uint8_t *data, uint32_t device_id) {
+void SIMWrapper::add_payload(tlm_command cmd, uint32_t address, uint32_t size, uint8_t *data, uint32_t burst_size, uint32_t device_id) {
 	tlm_generic_payload* payload = m_mm.allocate();
 	payload->acquire();
 	payload->set_address(address);
@@ -276,6 +287,7 @@ void SIMWrapper::add_payload(tlm_command cmd, uint32_t address, uint32_t size, u
 	payload->set_data_length(size);
 	payload->set_id(host_id);
 	device_map[payload] = device_id;
+	addr_bst_map[address] = burst_size;
 	
 	switch (payload->get_command()) {
 		case TLM_READ_COMMAND:
