@@ -42,6 +42,7 @@ private:
 	uint32_t bw_cnt;
 	double period;
 	string name;
+	sc_time t;
 
 	tlm_sync_enum nb_transport_fw(int id, tlm_generic_payload& trans, tlm_phase& phase, sc_time& t);
 	tlm_sync_enum nb_transport_bw(int id, tlm_generic_payload& trans, tlm_phase& phase, sc_time& t);

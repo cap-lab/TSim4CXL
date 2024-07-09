@@ -10,8 +10,8 @@ void Configurations::init_dram()
 
     ifstream ifs(filePath.str());
     if(!ifs.is_open()) {
-        cout << filePath.str() << " file doesn't exist\n";
-        exit(-1);
+    	cout << filePath.str() << " file doesn't exist\n";
+    	exit(-1);
     }
 
     string rawJson;
@@ -60,12 +60,11 @@ void Configurations::init_configurations()
 
     ifstream ifs(filePath.str());
     if(!ifs.is_open()) {
-        cout << "The \"system.json\" file doesn't exist\n";
-        exit(-1);
+		cout << "The \"system.json\" file doesn't exist\n";
+		exit(-1);
     }
 
     string rawJson;
-
     ifs.seekg(0, ios::end);
     rawJson.reserve(ifs.tellg());
     ifs.seekg(0, ios::beg);
@@ -103,17 +102,16 @@ void Configurations::init_configurations()
 
 	cout << "--------HOST INFO--------\n";
     for (int i = 0; i<host_num; i++){
-        cout << "[CPU-"<< i << "]\n";
-        
-        CPUInfo cpuinfo;
-        const Json::Value cpu = root["cpu" + to_string(i)];
-        cpuinfo.simul_freq = cpu["freq"].asDouble();
+		cout << "[CPU-"<< i << "]\n";
+		CPUInfo cpuinfo;
+		const Json::Value cpu = root["cpu" + to_string(i)];
+		cpuinfo.simul_freq = cpu["freq"].asDouble();
 		cpuinfo.cpu_latency = cpu["cpu_latency"].asUInt();
     	cpuinfo.period = 1/cpuinfo.simul_freq;
     	cout << "CPU Frequency : " << cpuinfo.simul_freq << " (Ghz)\n";
-	    cout << "Clock Period : " << cpuinfo.period << " (ns)\n";
+		cout << "Clock Period : " << cpuinfo.period << " (ns)\n";
 		cout << "Core+LLC Latency : " << cpuinfo.cpu_latency << " (ns)\n";
-        cpu_map[i] = cpuinfo;
+		cpu_map[i] = cpuinfo;
     }
 
 	init_dram();

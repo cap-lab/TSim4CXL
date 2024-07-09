@@ -42,8 +42,6 @@ void Interconnector::fw_thread() {
 		
 		/* WRITE */
 		if (!w_queue.empty()) {
-			//wait(ctrl_latency, SC_NS);
-			
 			tlm_generic_payload *trans = w_queue.front();
 			w_queue.pop_front();
 			int id = device_map[trans];
@@ -55,9 +53,6 @@ void Interconnector::fw_thread() {
 }
 
 tlm_sync_enum Interconnector::nb_transport_fw(int id, tlm_generic_payload& trans, tlm_phase& phase, sc_time& t) {
-	if (phase == END_RESP)
-		return TLM_COMPLETED;
-
 	/* READ */
 	if (trans.get_command() == TLM_READ_COMMAND) {
 		r_trans_id[trans.get_address()] = id;
@@ -74,15 +69,18 @@ tlm_sync_enum Interconnector::nb_transport_fw(int id, tlm_generic_payload& trans
 }
 
 tlm_sync_enum Interconnector::nb_transport_bw(int id, tlm_generic_payload& trans, tlm_phase& phase, sc_time& t) {
-	/* READ */
-	if (trans.get_command() == TLM_READ_COMMAND) {
-		id = r_trans_id[trans.get_address()];
-	}
+ 	/* READ */
+ 	if (trans.get_command() == TLM_READ_COMMAND) {
+ 		id = r_trans_id[trans.get_address()];
+		rack_queue.push_back(&trans);
+ 	}
 
 	/* WRITE */
-	else {
-		id = w_trans_id[trans.get_address()];
-	}
-	tlm_sync_enum reply = slave[id]->nb_transport_bw(trans, phase, t);
-	return reply;
+ 	else {
+ 		id = w_trans_id[trans.get_address()];
+		wack_queue.push_back(&trans);
+ 	}
+
+ 	tlm_sync_enum reply = slave[id]->nb_transport_bw(trans, phase, t);
+ 	return reply;
 }

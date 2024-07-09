@@ -26,18 +26,16 @@ class ShmemCommunicator {
 	};
     ~ShmemCommunicator();
 
-    bool is_empty();
-    int send_packet(Packet* pPacket);
-    int irecv_packet(Packet* pPacket);
-    int recv_packet(Packet* pPacket);
+    int send_packet(Packet* pkt);
+    int recv_packet(Packet* pkt);
 	void *establish_shm_segment(char *name, int size);
-	bool prepare_connection(const char *name, int unique_id);
 	void wait_connection();
+	bool prepare_connection(const char *name, int unique_id);
 
   private:
-	PacketBuffer *send_buffer;	//sending buffer
+	PacketBuffer *send_buffer;
+    PacketBuffer *recv_buffer;
 	char *bi_name;
-    PacketBuffer *recv_buffer;	//receving buffer
 	char *ib_name;
 
 	struct timespec ts;

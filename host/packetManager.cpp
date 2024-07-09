@@ -113,7 +113,7 @@ Packet* packetManager::makePacket(PacketType t, uint32_t address, uint8_t* data,
     memset(packet, 0, sizeof(Packet));
     packet->type = t;
     packet->size = size;
-    packet->cycle = delta;
+    packet->delta = delta;
     packet->address = address;
     packet->device_id = device;
 

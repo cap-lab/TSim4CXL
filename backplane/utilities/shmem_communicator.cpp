@@ -10,46 +10,31 @@ ShmemCommunicator::~ShmemCommunicator() {
     shm_unlink(bi_name);
 
     string del_file = "rm -rf /dev/shm/" + string(ib_name);
-
     ret = system(del_file.c_str());
     if (ret < 0)
-        std::cout << "Failed to delete " << ib_name << std::endl;
+		cout << "Failed to delete " << ib_name << std::endl;
 
     del_file = "rm -rf /dev/shm/" + string(bi_name);
     ret = system(del_file.c_str());
     if (ret < 0)
-        std::cout << "Failed to delete " << bi_name << std::endl;
+		cout << "Failed to delete " << bi_name << std::endl;
 
     delete[] ib_name;
     delete[] bi_name;
 }
 
-bool ShmemCommunicator::is_empty() {
-    return pb_is_empty(recv_buffer);
-}
-
-int ShmemCommunicator::send_packet(Packet * pPacket) {
+int ShmemCommunicator::send_packet(Packet * pkt) {
     while (pb_is_full(send_buffer)){nanosleep(&ts, NULL); };
-    pb_write(send_buffer, pPacket);
-	return sizeof(pPacket);
+    pb_write(send_buffer, pkt);
+	return sizeof(pkt);
 }
 
-int ShmemCommunicator::irecv_packet(Packet * pPacket) {
-    if (pb_is_empty(recv_buffer))
-		return 0;
-    
-	else
-        return pb_read(recv_buffer, pPacket);
-}
-
-int ShmemCommunicator::recv_packet(Packet * pPacket) {
-    while (pb_is_empty(recv_buffer)) { nanosleep(&ts, NULL); };
-    pb_read(recv_buffer, pPacket);
-	return sizeof(pPacket);
+int ShmemCommunicator::recv_packet(Packet * pkt) {
+	return pb_is_empty(recv_buffer) ? 0 : pb_read(recv_buffer, pkt);
 }
 
 bool ShmemCommunicator::prepare_connection(const char *name, int unique_id) {
-    struct passwd *pd = getpwuid(getuid());  // Check for NULL!
+    struct passwd *pd = getpwuid(getuid()); 
 
     ib_name = new char[64];
 	bi_name = new char[64];
@@ -77,30 +62,30 @@ bool ShmemCommunicator::prepare_connection(const char *name, int unique_id) {
     pb_init(recv_buffer);
 
     if (!send_buffer || !recv_buffer) {
-        return false;
+    	return false;
     }
 
     return true;
 }
 
 void ShmemCommunicator::wait_connection() {
-    cout << "Wait for the reponse from the host... " << endl;
-    Packet p;
-    recv_packet(&p);
-    cout << "Shmem is established" << endl;
+    cout << "Wait for the reponse from the host...\n";
+	while (pb_is_empty(recv_buffer)) {nanosleep(&ts, NULL);}
+	Packet p;
+	pb_read(recv_buffer, &p);
+    cout << "Shmem is established.\n";
 }
 
 void *ShmemCommunicator::establish_shm_segment(char *name, int size) {
     int fd;
-
     fd = shm_open(name, O_RDWR | O_CREAT, 0600);
     if (fd < 0)
-        cerr << "shm_open fails with " << name << endl;
+    	cerr << "shm_open fails with " << name << endl;
     if (ftruncate(fd, size) < 0)
-        cerr << "ftruncate() shared memory segment" << endl;
+    	cerr << "ftruncate() shared memory segment" << endl;
     void *segment =	(void *) mmap(NULL, size, PROT_READ | PROT_WRITE,	MAP_SHARED, fd, 0);
     if (segment == MAP_FAILED)
-        cerr << "mapping shared memory segment" << endl;
+    	cerr << "mapping shared memory segment" << endl;
     close(fd);
 
     return segment;

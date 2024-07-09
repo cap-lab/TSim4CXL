@@ -9,8 +9,8 @@ extern "C"
 #include <stdint.h>
 
 typedef enum {
-    packet_read,        /* blocking */
-    packet_write,       /* blocking */
+    packet_read, 
+    packet_write,
     packet_bar_wait,
     packet_bar_signal,
     packet_elapsed,
@@ -22,7 +22,7 @@ typedef enum {
 typedef struct _Packet{
     PacketType type;
     uint32_t size;
-    uint64_t cycle;
+    uint64_t delta;
     uint32_t address;
     uint32_t device_id;
     uint8_t data[MAX_DATA_SIZE];

@@ -3,42 +3,46 @@
 Statistics::Statistics()
 {
     stats.num_read_request = 0;
-    stats.num_read_flit = 0;
-    stats.num_read_packet = 0;
+    stats.read_flit = 0;
+    stats.read_packet = 0;
     stats.total_read_latency = 0;
     stats.total_read_size = 0;
     stats.num_write_request = 0;
-    stats.num_write_flit = 0;
-    stats.num_write_packet = 0;
+    stats.write_flit = 0;
+    stats.write_packet = 0;
     stats.total_write_latency = 0;
     stats.total_write_size = 0;
+	stats.total_flit = 0;
 }
 
 void Statistics::print_stats()
 {
 	cout << "[----------" << name << "----------]" << '\n';
     
-	if (stats.num_read_packet) {
+	if (stats.read_packet) {
 		cout << "<-- READ -->" << '\n';
-		cout << "packet num      : " << stats.num_read_packet << '\n';
+		cout << "packet num      : " << stats.read_packet << '\n';
 		cout << "total size      : " << stats.total_read_size << '\n';
     }
     
-	if (stats.num_write_packet) {
+	if (stats.write_packet) {
 		cout << "<-- WRITE -->" << '\n';
-		cout << "packet num      : " << stats.num_write_packet << '\n';
+		cout << "packet num      : " << stats.write_packet << '\n';
 		cout << "total size      : " << stats.total_write_size << '\n';
-		cout << "----------------------------------" << '\n';
     }
 	
-	if (stats.num_read_flit) {
-	    cout << "<-- READ -->" << '\n';
-        cout << "flit num      : " << stats.num_read_flit << '\n';
+	if (stats.total_flit) {
+		cout << "Total flit num  :" << stats.total_flit << '\n';
+	}	
+
+	if (stats.read_flit) {
+		cout << "<-- READ -->" << '\n';
+		cout << "flit num      : " << stats.read_flit << '\n';
 	}
 	
-	if (stats.num_write_flit) {
-	    cout << "<-- WRITE -->" << '\n';
-        cout << "flit num      : " << stats.num_write_flit << '\n';
+	if (stats.write_flit) {
+		cout << "<-- WRITE -->" << '\n';
+		cout << "flit num      : " << stats.write_flit << '\n';
 	}
 }
 

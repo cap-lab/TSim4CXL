@@ -38,7 +38,9 @@ private:
 
 	deque<tlm_generic_payload*> r_queue;
 	deque<tlm_generic_payload*> w_queue;
-
+	deque<tlm_generic_payload*> rack_queue;
+	deque<tlm_generic_payload*> wack_queue;
+	
 	uint32_t count_fw = 0;
 };
 

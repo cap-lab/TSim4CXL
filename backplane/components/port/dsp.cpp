@@ -4,8 +4,7 @@ extern Configurations cfgs;
 extern map<uint32_t, uint32_t> addr_bst_map;
 
 DSP::DSP(sc_module_name name, int id) : sc_module(name), master("master"), slave("slave"), clock("clock"),
-		id(id), name(string(name)),
-		w_msg(0), r_msg(0), w_flit(0), r_flit(0)
+		id(id), name(string(name)), w_msg(0), flit_num(0), fw_cnt(0), t(SC_ZERO_TIME)
 {
 	init();
 	SC_THREAD(fw_thread);
@@ -31,17 +30,12 @@ void DSP::init() {
 	stats = new Statistics();
 	stats->set_name(name);
 
-	/* Flit-Packing variables (payload num per flit) */	
-	/* 68B/256B WRITE rsp (wo Data) */
+	/* Flit-Packing variables */	
 	w_msg = (flit_mode == 68) ? 2 : (flit_mode == 256) ? 12 : w_msg;
-
-	/* 256B READ rsp (w Data) */
-	r_msg = 3;
 }
 
 void DSP::fw_thread() {
 	tlm_phase phase = BEGIN_REQ;
-	sc_time t = SC_ZERO_TIME;
 
 	while(1) {
 		if (!w_queue.empty()) {
@@ -55,221 +49,130 @@ void DSP::fw_thread() {
 			tlm_generic_payload *trans = r_queue.front();
 			r_queue.pop_front();
 	
-			if (count_fw%8 == 0)
+			if (fw_cnt%8 == 0)
 				wait(port_latency, SC_NS);
 			else
 				wait(link_latency, SC_NS);
-			count_fw++;
+			fw_cnt++;
 			
 			tlm_sync_enum reply = master->nb_transport_fw(*trans, phase, t);
 		}	
-		total_cycle++;
 		wait(period, SC_NS);
 	}
 }
 
 void DSP::bw_thread() {
 	while(1) {
-		/* 68B Flit */
-		if (flit_mode == 68) {
-			/* READ */
-			if(!rack_queue.empty()) {
-				flit_packing_68(true);
-			}
-
-			/* READ (Last Flit) */
-			else if (r_flit == 8) {
-				flit_packing_68(true);
-			}
-
-			/* WRITE */
-			if(wack_queue.size() >= w_msg) {
-				flit_packing_68(false);
-			}
-		}
-
-		/* 256B Flit */
-		else {
-			/* WRITE (1st flit) */
-			if ((w_flit == 0) && (wack_queue.size() >= w_msg)) {
-				flit_packing_256(false);
-			}
-			
-			/* WRITE (2nd flit) */
-			else if ((w_flit > 0) && (wack_queue.size() >= req_num%w_msg)) {
-				flit_packing_256(false);
-				w_flit = 0;
-			}
-			
-			/* READ (1st/2nd flit) */
-			if((r_flit < 2) && (rack_queue.size() >= r_msg)) {
-				flit_packing_256(true);
-			}
-
-			/* READ (3rd flit) */
-			else if((r_flit == 2) && (rack_queue.size() >= r_msg+1)) {
-				flit_packing_256(true);
-				r_flit = 0;
-			}
-		}
+		flit_mode == 68 ? flit_packing_68() : flit_packing_256();
 		wait(period, SC_NS);
 	}
 }
 
-void DSP::flit_packing_68(bool read) {
+void DSP::flit_packing_68() {
 	tlm_phase phase = BEGIN_RESP;
-	sc_time t = SC_ZERO_TIME;
-
-	/* READ */
-	if(read) {
-		/* Last Flit */
-		if (r_flit == 8) {
-			r_flit = 0;
-			tlm_generic_payload *trans = pending_queue.front();	
-			pending_queue.pop_front();
-
-			/* CXL Latency (per flit) */
-			wait(21, SC_NS);
-			stats->increase_r_flit();
-
-			tlm_sync_enum reply = slave->nb_transport_bw(*trans, phase, t);
-		}
-
-		else {
-			if (r_flit > 0) {
-				tlm_generic_payload *trans = pending_queue.front();	
-				pending_queue.pop_front();
-
-				/* CXL Latency (per flit) */
-				wait(21, SC_NS);
-				stats->increase_r_flit();
-
-				tlm_sync_enum reply = slave->nb_transport_bw(*trans, phase, t);
-			}
-			tlm_generic_payload *trans = rack_queue.front();
-			rack_queue.pop_front();
-			pending_queue.push_back(trans);
-
-			if (r_flit == 0) {
-				/* CXL Latency (per flit) */
-				wait(port_latency+link_latency, SC_NS);
-				stats->increase_r_flit();
-			}
-
-			r_flit++;
-		}
-	}
-
-	/* WRITE */
-	else {
+	
+	/* Only W flit */
+	if (wack_queue.size() >= w_msg) {
 		/* CXL Latency (per flit) */
 		//wait(port_latency+link_latency, SC_NS);
-		stats->increase_w_flit();
+		stats->increase_total_flit();
 
 		for (int i = 0; i < w_msg; i++) {
 			tlm_generic_payload *trans = wack_queue.front();
 			wack_queue.pop_front();
 			tlm_sync_enum reply = slave->nb_transport_bw(*trans, phase, t);
-			if (wack_queue.empty())
-				break;
+		}
+	}
+	/* 4DRS per 5flits */
+	else if (rack_queue.size() >= 4) {
+		
+		/* CXL Latency (5flits) */
+		for (int i = 0; i < 5; i++) {
+			stats->increase_total_flit();
+		}
+
+		/* W/R flit together (1NDR+4DRS per 5flits) */
+		if (!wack_queue.empty()) {
+			tlm_generic_payload *trans = wack_queue.front();
+			wack_queue.pop_front();
+			tlm_sync_enum reply = slave->nb_transport_bw(*trans, phase, t);
+		}
+		
+		/* 4DRS */	
+		for (int i = 0; i < 4; i++) {
+			wait(period, SC_NS);
+			
+			if (i == 0)
+				wait(port_latency+link_latency, SC_NS);	
+			else
+				wait(13, SC_NS);
+
+			tlm_generic_payload *trans = rack_queue.front();
+			rack_queue.pop_front();
+			tlm_sync_enum reply = slave->nb_transport_bw(*trans, phase, t);
 		}
 	}
 }
 
-void DSP::flit_packing_256(bool read) {
+void DSP::flit_packing_256() {
 	tlm_phase phase = BEGIN_RESP;
-	sc_time t = SC_ZERO_TIME;
 
-	/* READ */
-	if(read) {
-		if (r_flit < 2) {
-			r_flit++;
-
-			/* CXL Latency (per flit) */
-			if (r_flit == 0)
-				wait(port_latency+link_latency, SC_NS);
-			else
-				wait(21, SC_NS);
-			stats->increase_r_flit();
-			
-			if (stats->get_r_flit_num() % 5 == 0)
-				r_flit = 0;
-
-			//cout << "---------" << endl;	
-			for (int i = 0; i < r_msg; i++) {
-				tlm_generic_payload *trans = rack_queue.front();
-				rack_queue.pop_front();
-
-				//cout << name << "::(R_RESP)DSP->USP::" << trans->get_address() << endl;
-				tlm_sync_enum reply = slave->nb_transport_bw(*trans, phase, t);
-
-				if (rack_queue.empty())
-					break;
-			}
-		}
-
-		else {
-			/* CXL Latency (per flit) */
-			wait(21, SC_NS);
-			stats->increase_r_flit();
-
-			//cout << "---------" << endl;	
-			for (int i = 0; i < (r_msg+1); i++) {
-				tlm_generic_payload *trans = rack_queue.front();
-				rack_queue.pop_front();
-
-				//cout << name << "::(R_RESP)DSP->USP::" << trans->get_address() << endl;
-				tlm_sync_enum reply = slave->nb_transport_bw(*trans, phase, t);
-				if (rack_queue.empty())
-					break;
-			}
+	/* W flit only */
+	if (wack_queue.size() >= w_msg) {
+		/* CXL Latency (per flit) */
+		//wait(port_latency+link_latency, SC_NS);
+		stats->increase_total_flit();
+		
+		for (int i = 0; i < w_msg; i++) {
+			tlm_generic_payload *trans = wack_queue.front();
+			wack_queue.pop_front();
+			tlm_sync_enum reply = slave->nb_transport_bw(*trans, phase, t);
 		}
 	}
 
-	/* WRITE */
-	else {
-		if (w_flit == 0) {
-			/* CXL Latency (per flit) */
-			//wait(port_latency, SC_NS);
-			stats->increase_w_flit();
-			w_flit++;
-
-			//cout << "---------" << endl;	
-			for (int i = 0; i < w_msg; i++) {
-				tlm_generic_payload *trans = wack_queue.front();
-				wack_queue.pop_front();
-				//cout << name << "::(W_RESP)DSP->USP::" << trans->get_address() << endl;
-				tlm_sync_enum reply = slave->nb_transport_bw(*trans, phase, t);
-				if (wack_queue.empty()) {
-					break;
-				}
-			}
-		}
-		else {
-			/* CXL Latency (per flit) */
-			//wait(port_latency, SC_NS);
-			stats->increase_w_flit();
-			w_flit++;
-
-			//cout << "---------" << endl;	
-			for (int i = 0; i < (req_num%w_msg); i++) {
-				tlm_generic_payload *trans = wack_queue.front();
-				wack_queue.pop_front();
-				//cout << name << "::(W_RESP)DSP->USP::" << trans->get_address() << endl;
-				tlm_sync_enum reply = slave->nb_transport_bw(*trans, phase, t);
-				if (wack_queue.empty()) {
-					break;
-				}
-			}
+	/* 6DRS per 2flits */
+	else if (rack_queue.size() >= 6) {
+		
+		/* CXL Latency (2flits) */
+		for (int i = 0; i < 2; i++) {
+			//wait(port_latency+link_latency, SC_NS);
+			stats->increase_total_flit();
+			flit_num++;
 		}
 
+		/* W/R flit together (8NDR+6DRS per 2flits) */
+		if (!wack_queue.empty()) {
+			/* MAX 8NDR */
+			for (int i = 0; i < 8; i++) {
+				tlm_generic_payload *trans = wack_queue.front();
+				wack_queue.pop_front();
+				tlm_sync_enum reply = slave->nb_transport_bw(*trans, phase, t);
+				if (wack_queue.empty())
+					break;
+			}
+		}	
+		
+		/* 6DRS */	
+		for (int i = 0; i < 6; i++) {
+			tlm_generic_payload *trans = rack_queue.front();
+			rack_queue.pop_front();
+			tlm_sync_enum reply = slave->nb_transport_bw(*trans, phase, t);
+		}
+	}
+
+	/* Remaining R flit */
+	else if ((rack_queue.size() == (req_num%6)) & (flit_num == (req_num/6)*2)) {
+		stats->increase_total_flit();
+		flit_num = 0;
+		for (int i = 0; i < (req_num%6); i++) {
+			tlm_generic_payload *trans = rack_queue.front();
+			rack_queue.pop_front();
+			tlm_sync_enum reply = slave->nb_transport_bw(*trans, phase, t);
+		}
 	}
 }
 
 tlm_sync_enum DSP::nb_transport_fw(int id, tlm_generic_payload& trans, tlm_phase& phase, sc_time& t) {
-	if (phase == END_RESP)
-		return TLM_COMPLETED;
-
 	/* READ */
 	if (trans.get_command() == TLM_READ_COMMAND) {
 		r_queue.push_back(&trans);
