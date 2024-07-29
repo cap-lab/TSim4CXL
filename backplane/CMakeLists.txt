@@ -39,7 +39,7 @@ add_executable(
 	components/host.cpp
 	components/wrapper/sim_wrapper.cpp
 	components/wrapper/mem_wrapper.cpp
-	components/interconnector.cpp
+	components/controller.cpp
 	components/port/usp.cpp
 	components/port/dsp.cpp
 	utilities/statistics.cpp

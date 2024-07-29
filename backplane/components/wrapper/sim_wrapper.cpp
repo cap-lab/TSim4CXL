@@ -65,9 +65,12 @@ void SIMWrapper::periodic_process() {
 		if (host->get_status() == RUNNING) {
 			while (true) {
 				if (host->recv_packet(&packet) != 0) {
-					//uint64_t delta = packet.delta;
-					//if (delta != 0)
-						//wait(delta, SC_NS);
+					uint64_t delta = packet.delta;
+					if (delta != 0) {
+						cout << "H:" << host_id << " waiting for " << delta << "ns\n";
+						wait(delta, SC_NS);
+					}
+
 					received = true;
 					break;
 				}
@@ -144,8 +147,8 @@ void SIMWrapper::clock_negedge() {
 		memcpy(packet_data + (dram_req_size*rack_num), trans->get_data_ptr(), trans->get_data_length());
 		rack_num++;
 		outstanding--;
-		
-    	/* Wait until the burst data condition is satisfied */
+    	
+		/* Wait until the burst data condition is satisfied */
 		if (rack_num == packet_size/dram_req_size)	{
 			Packet packet;
 			memset(&packet, 0, sizeof(Packet));
@@ -220,11 +223,11 @@ void SIMWrapper::handle_read_packet(Packet *packet) {
 	handle_wait_packet(packet->address);	
 	wait(cpu_latency, SC_NS);
 
-	if (read_first) {
-		read_start = sc_time_stamp();
-		read_first = false;
-		wait(10000, SC_NS);
-	}
+//	if (read_first) {
+//		read_start = sc_time_stamp();
+//		read_first = false;
+//		wait(10000, SC_NS);
+//	}
 	
 	req_done = false;
     uint32_t addr = packet->address;
@@ -240,12 +243,12 @@ void SIMWrapper::handle_read_packet(Packet *packet) {
 }
 
 void SIMWrapper::handle_write_packet(Packet *packet) {
+	wait(cpu_latency, SC_NS);
 	req_done = false;
 	uint32_t addr = packet->address;
 	uint32_t device_id = packet->device_id;
 	uint32_t burst_size = packet->size;
-
-	sync_queue.push_back((int)addr);
+	sync_queue.push_back(addr);
 	stats->increase_w_packet();
 	stats->update_total_write_size(packet_size);
 	

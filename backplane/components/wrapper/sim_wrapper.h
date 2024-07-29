@@ -29,7 +29,7 @@ public:
     deque<tlm_generic_payload*> rack_queue;
     
 	/* Synchronization */
-	deque<int> sync_queue;
+	deque<uint32_t> sync_queue;
 	
 	/* Incoming payloads to push at posedge */
     tlm_generic_payload* wack_incoming;

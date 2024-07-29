@@ -5,7 +5,7 @@
 
 #include <components/wrapper/sim_wrapper.h>
 #include <components/wrapper/mem_wrapper.h>
-#include <components/interconnector.h>
+#include <components/controller.h>
 #include <components/port/usp.h>
 #include <components/port/dsp.h>
 #include <utilities/sync_object.h>
@@ -25,7 +25,7 @@ SC_MODULE(Top)
     MEMWrapper** mem_wrapper;
 	USP** upstream_port;
 	DSP** downstream_port;
-	Interconnector* interconnector;
+	Controller* controller;
 	sc_in<bool>* clock;
 
     SC_CTOR(Top)
@@ -39,7 +39,7 @@ SC_MODULE(Top)
     	upstream_port = new USP*[host_num];
     	downstream_port = new DSP*[host_num];
 		clock = new sc_in<bool>[host_num];
-		interconnector = new Interconnector("ic");
+		controller = new Controller("ctrl");
 
 
 		for (int i = 0; i < host_num; i++) {
@@ -59,7 +59,7 @@ SC_MODULE(Top)
 			/* Bind the modules */
 			sim_wrapper[i]->master.bind(upstream_port[i]->slave);
 			upstream_port[i]->master.bind(downstream_port[i]->slave);
-			downstream_port[i]->master.bind(interconnector->slave);
+			downstream_port[i]->master.bind(controller->slave);
 		}
 
 		// Memory
@@ -70,7 +70,7 @@ SC_MODULE(Top)
 			mem_wrapper[i] = new MEMWrapper(module_name.c_str(), config.str(), i);
 			mem_wrapper[i]->clock.bind(clock[i%host_num]);
 			
-			interconnector->master.bind(mem_wrapper[i]->slave);
+			controller->master.bind(mem_wrapper[i]->slave);
 		}
 		
 		active_dram |= 1;
@@ -104,9 +104,9 @@ SC_MODULE(Top)
 				}
 			}
 		}
-		if (interconnector) {
-			delete interconnector;
-			interconnector = NULL;
+		if (controller) {
+			delete controller;
+			controller = NULL;
 		}
 		if (mem_wrapper) {
 			for (int i = 0; i < dram_num; i++) {

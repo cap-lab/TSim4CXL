@@ -1,5 +1,6 @@
 #include <map>
 #include <utilities/configurations.h>
+#include <utilities/statistics.h>
 
 #include "tlm_utils/multi_passthrough_initiator_socket.h"
 #include "tlm_utils/multi_passthrough_target_socket.h"
@@ -8,16 +9,16 @@ using namespace std;
 using namespace tlm;
 using namespace sc_core;
 
-class Interconnector: public sc_module
+class Controller: public sc_module
 {
 public:
-    SC_HAS_PROCESS(Interconnector);
+    SC_HAS_PROCESS(Controller);
 
-    Interconnector(sc_module_name name);
-    ~Interconnector();
+    Controller(sc_module_name name);
+    ~Controller();
 
-	tlm_utils::multi_passthrough_initiator_socket<Interconnector> master;
-	tlm_utils::multi_passthrough_target_socket<Interconnector> slave;
+	tlm_utils::multi_passthrough_initiator_socket<Controller> master;
+	tlm_utils::multi_passthrough_target_socket<Controller> slave;
 
 private:
 	/* Key: payload address, Value: nb_transport ID */
@@ -29,18 +30,31 @@ private:
 	
 	void init();
 	void fw_thread();
+	void bw_thread();
+    void flit_packing_68();
+    void flit_packing_256();
 
 	double period;
+	uint32_t id;
+	uint32_t r_msg;
+	uint32_t w_msg;
+	uint32_t r_num;
+	uint32_t w_num;
+	uint32_t req_num;
+	uint32_t dram_num;
+	uint32_t flit_num;
+	uint32_t flit_mode;
 	uint32_t link_latency;
-	uint32_t port_latency;
-	uint32_t dev_ic_latency;
 	uint32_t ctrl_latency;
+	uint32_t dev_ic_latency;
+	string name;
+	sc_time t;
 
 	deque<tlm_generic_payload*> r_queue;
 	deque<tlm_generic_payload*> w_queue;
 	deque<tlm_generic_payload*> rack_queue;
 	deque<tlm_generic_payload*> wack_queue;
 	
-	uint32_t count_fw = 0;
+	Statistics *stats;	
 };
 
