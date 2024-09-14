@@ -1,4 +1,4 @@
-# CXLSim
+# TSim4CXL
 
 **Trace-driven simulation framework** that offers a solution for evaluating the performance of **CXL-based memory systems** in HPC environments.
 
