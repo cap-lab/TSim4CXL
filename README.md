@@ -1,4 +1,4 @@
-# CXLSim
+# TSim4CXL
 
 **Trace-driven simulation framework** that offers a solution for evaluating the performance of **CXL-based memory systems** in HPC environments.
 
@@ -26,11 +26,11 @@ host_num : 2,
 packet_size : 1024, // Byte
 
 // CXL parameters
-flit_size : 64, // Byte
+flit_mode : 68, // Byte
 link_efficiency : 0.928, 
-PCIe_raw_bandwidth : 37, // Byte per nanosecond
-cxl_port_latency : 62, // nanosecond
-cxl_ic_latency : 15, // nanosecond
+PCIe_raw_bandwidth : 35, // Byte per nanosecond
+cxl_port_latency : 61, // nanosecond
+cxl_ic_latency : 20, // nanosecond
 
 // CPU configurations
 cpu0 :
@@ -75,7 +75,7 @@ Terminate:0:0:
 ## How to Compile
 - **cxlsim**
 ```bash
-git clone https://github.com/cap-lab/CXLSim.git
+git clone https://github.com/cap-lab/TSim4CXL.git
 cd CXLSim
 mkdir shared
 cd backplane
