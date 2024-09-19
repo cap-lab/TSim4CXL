@@ -1,9 +1,24 @@
 {
   "dram_num" : 1,
-  "req_size" : 64, // Byte
+  "req_size" : 64, // B
   "dram0" : {
     "config" : "DDR5_3200C", //Ramulator2
     "size" : "0xc0000000",
-    "freq" : 1.6 // GHz
+    "freq" : 2.4 // GHz
+  },
+  "dram1" : {
+    "config" : "DDR5_3200C", //Ramulator2
+    "size" : "0xc0000000",
+    "freq" : 2.4 // GHz
+  },
+  "dram2" : {
+    "config" : "DDR5_3200C", //Ramulator2
+    "size" : "0xc0000000",
+    "freq" : 2.4 // GHz
+  },
+  "dram3" : {
+    "config" : "DDR5_3200C", //Ramulator2
+    "size" : "0xc0000000",
+    "freq" : 2.4 // GHz
   }
 }

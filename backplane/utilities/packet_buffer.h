@@ -8,7 +8,7 @@ extern "C"
 #endif
 
 #include "sim_packet.h"
-#define PKT_BUFFER_SIZE (8192)
+#define PKT_BUFFER_SIZE (819200)
 
 typedef struct {
     volatile int start;			/* index of oldest element              */
