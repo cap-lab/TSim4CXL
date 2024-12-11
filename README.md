@@ -73,9 +73,9 @@ Terminate:0:0:
 ```
 
 ## How to Compile
-- **cxlsim**
+- **TSim4CXL**
 ```bash
-git clone https://github.com/cap-lab/CXLSim.git
+git clone TSim4CXL.git
 cd CXLSim
 mkdir shared
 cd backplane
