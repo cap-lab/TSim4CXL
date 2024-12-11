@@ -1,4 +1,4 @@
-# CXLSim
+# TSim4CXL
 
 **Trace-driven simulation framework** that offers a solution for evaluating the performance of **CXL-based memory systems** in HPC environments.
 
@@ -27,10 +27,10 @@ packet_size : 1024, // Byte
 
 // CXL parameters
 flit_size : 64, // Byte
-link_efficiency : 0.928, 
-PCIe_raw_bandwidth : 37, // Byte per nanosecond
+link_efficiency : 0.924, 
+PCIe_raw_bandwidth : 35, // Byte per nanosecond
 cxl_port_latency : 42, // nanosecond
-cxl_ic_latency : 15, // nanosecond
+cxl_ic_latency : 20, // nanosecond
 
 // CPU configurations
 cpu0 :
@@ -53,7 +53,7 @@ dram0 :
 {
   config : DDR5_3200C, //Ramulator2
   size : 0xc0000000,
-  freq : 1.6,
+  freq : 2.4,
 }
 ```
 
