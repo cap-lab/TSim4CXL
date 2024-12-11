@@ -62,29 +62,15 @@ void DSP::bw_thread() {
 }
 
 tlm_sync_enum DSP::nb_transport_fw(int id, tlm_generic_payload& trans, tlm_phase& phase, sc_time& t) {
-	/* READ */
-	if (trans.get_command() == TLM_READ_COMMAND) {
-		r_queue.push_back(&trans);
-	}
-
-	/* WRITE */
-	else {
-		w_queue.push_back(&trans);
-	}
+	auto& queue = (trans.get_command() == TLM_READ_COMMAND) ? r_queue : w_queue;
+    queue.push_back(&trans);
 
 	return TLM_UPDATED;
 }
 
 tlm_sync_enum DSP::nb_transport_bw(int id, tlm_generic_payload& trans, tlm_phase& phase, sc_time& t) {
-	/* READ */
-	if (trans.get_command() == TLM_READ_COMMAND) {
-		rack_queue.push_back(&trans);
-	}
-
-	/* WRITE */
-	else {
-		wack_queue.push_back(&trans);
-	}
+	auto& queue = (trans.get_command() == TLM_READ_COMMAND) ? rack_queue : wack_queue;
+    queue.push_back(&trans);
 
 	return TLM_UPDATED;
 }

@@ -5,7 +5,6 @@ extern SyncObject sync_object;
 extern uint32_t active_cores;
 extern uint32_t active_dram;
 map<tlm_generic_payload *, uint32_t> device_map;
-map<uint32_t, uint32_t> addr_bst_map;
 
 SIMWrapper::SIMWrapper(sc_module_name name, int id, int num) : sc_module(name), host_id(id), name(string(name)),
 											active_cycle(0), total_cycle(0), outstanding(0), w_idx(0), r_idx(0), wack_num(0), rack_num(0),
@@ -65,9 +64,11 @@ void SIMWrapper::periodic_process() {
 		if (host->get_status() == RUNNING) {
 			while (true) {
 				if (host->recv_packet(&packet) != 0) {
+
+					/* Wait for Delta time */
 					uint64_t delta = packet.delta;
-					if (delta != 0) {
-						cout << "H:" << host_id << " waiting for " << delta << "ns\n";
+					if(delta != 0) {
+						cout << "HOST-" << host_id << " waiting for " << delta << " ns...\n";
 						wait(delta, SC_NS);
 					}
 
@@ -97,7 +98,6 @@ void SIMWrapper::periodic_process() {
 		wait(period, SC_NS);
     }
 	cout << "Simulator stopped by Host-" << host_id << '\n'; 
-	cout << "Read:" << (uint64_t)((sc_time_stamp() - read_start).to_double()/1000) << " ns"<< endl;
 	sc_stop();
 }
 
@@ -219,24 +219,21 @@ void SIMWrapper::handle_wait_packet(uint32_t addr) {
 }
 
 void SIMWrapper::handle_read_packet(Packet *packet) {
-	/* Waiting for the signal from WACK */
+	/* Wait for the corresponding WACK */
 	handle_wait_packet(packet->address);	
-	wait(cpu_latency, SC_NS);
-
-//	if (read_first) {
-//		read_start = sc_time_stamp();
-//		read_first = false;
-//		wait(10000, SC_NS);
-//	}
 	
+	wait(cpu_latency, SC_NS);
 	req_done = false;
+
     uint32_t addr = packet->address;
 	uint32_t device_id = packet->device_id;
 	uint32_t burst_size = packet->size;
 	
+	/* Update stats*/
 	stats->increase_r_packet();
 	stats->update_total_read_size(packet_size);
 
+	/* Generate TLM paylaods*/
 	for (int i = 0; i < packet_size/dram_req_size; i++) {
 		add_payload(TLM_READ_COMMAND, addr+(dram_req_size*i), dram_req_size, NULL, burst_size, device_id);
 	}
@@ -245,13 +242,18 @@ void SIMWrapper::handle_read_packet(Packet *packet) {
 void SIMWrapper::handle_write_packet(Packet *packet) {
 	wait(cpu_latency, SC_NS);
 	req_done = false;
+
 	uint32_t addr = packet->address;
 	uint32_t device_id = packet->device_id;
 	uint32_t burst_size = packet->size;
+
 	sync_queue.push_back(addr);
+
+	/* Update stats */
 	stats->increase_w_packet();
 	stats->update_total_write_size(packet_size);
 	
+	/* Generate TLM paylaods */
 	for (int i = 0; i < packet_size/dram_req_size; i++) {
 		uint8_t* data = new uint8_t[dram_req_size];
 		memcpy(data, (packet->data)+(dram_req_size*i), dram_req_size);		
@@ -268,7 +270,6 @@ void SIMWrapper::add_payload(tlm_command cmd, uint32_t addr, uint32_t size, uint
 	payload->set_id(host_id);
 	
 	device_map[payload] = device_id;
-	addr_bst_map[addr] = burst_size;
 	
 	if (payload->get_command() == TLM_READ_COMMAND) {
 		r_queue.push_back(payload);

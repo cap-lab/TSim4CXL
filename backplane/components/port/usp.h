@@ -21,30 +21,22 @@ public:
 	tlm_utils::multi_passthrough_initiator_socket<USP> master;
 	tlm_utils::multi_passthrough_target_socket<USP> slave;
     void flit_packing_68(bool read);
-    void flit_packing_256(bool read);
     void fw_thread();
     void bw_thread();
 	void init();
 
 private:
 	uint32_t id;
-	uint32_t req_num;
-	uint32_t dram_num;
-	uint32_t flit_mode;
-	uint32_t remainder;
-	uint32_t port_latency;
-	uint32_t link_latency;
-	uint32_t dev_ic_latency;
 	uint32_t f_idx;
 	uint32_t r_msg;
 	uint32_t w_msg;
-	uint32_t last_flit;
-	uint32_t w_flit_stack;
-	uint32_t dram_req_size;
-	uint32_t fw_cnt;
-	uint32_t bw_rcnt;
+	uint32_t pipeline;
 	uint32_t rack_num;
 	uint32_t wack_num;
+	uint32_t dram_num;
+	uint32_t payload_num;
+	uint32_t port_latency;
+	uint32_t link_latency;
 	double period;
 	string name;
 	sc_time t;

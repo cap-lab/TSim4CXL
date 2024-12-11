@@ -32,21 +32,15 @@ private:
 	void fw_thread();
 	void bw_thread();
     void flit_packing_68();
-    void flit_packing_256();
 
 	double period;
 	uint32_t id;
-	uint32_t r_msg;
-	uint32_t w_msg;
 	uint32_t r_num;
 	uint32_t w_num;
-	uint32_t req_num;
-	uint32_t dram_num;
-	uint32_t flit_num;
-	uint32_t flit_mode;
+	uint32_t pipeline;
 	uint32_t link_latency;
 	uint32_t ctrl_latency;
-	uint32_t dev_ic_latency;
+
 	string name;
 	sc_time t;
 

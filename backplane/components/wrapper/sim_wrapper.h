@@ -74,8 +74,6 @@ private:
 	mm m_mm;
 	string name;
 	sc_time t;
-	sc_time read_start;
-	bool read_first = true;;
 
     Host *host;
 	Statistics *stats;	

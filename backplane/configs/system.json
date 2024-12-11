@@ -6,7 +6,7 @@
   "flit_mode" : 68,
   "link_efficiency" : 0.924, 
   "PCIe_raw_bandwidth" : 35, // GB/s
-  "cxl_port_latency" : 61, // ns
+  "cxl_port_latency" : 42, // ns
   "cxl_dev_ic_latency" : 20, // ns
 
   "cpu0" : {

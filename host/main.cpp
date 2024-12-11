@@ -1,7 +1,7 @@
 #include "traceGenerator.h"
 
 //#define TEST_MODE
-//#define TEST_SIZE 1024
+//#define TEST_SIZE 20480 
 
 void parse_trace(string file, vector<tuple<string, uint32_t, uint32_t, string>>& trace) {
 	ifstream input(file);
@@ -12,14 +12,14 @@ void parse_trace(string file, vector<tuple<string, uint32_t, uint32_t, string>>&
 
 	string line;
     while (getline(input, line)) {
-        istringstream iss(line);
-        string api, address, size, data;
-        getline(iss, api, ':');
-        getline(iss, address, ':');
-        getline(iss, size, ':');
-        getline(iss, data);
-        tuple<string, uint32_t, uint32_t, string> tup(api, stoul(address), stoul(size), data);
-        trace.push_back(tup);
+    	istringstream iss(line);
+		string api, address, size, data;
+    	getline(iss, api, ':');
+		getline(iss, address, ':');
+		getline(iss, size, ':');
+		getline(iss, data);
+		tuple<string, uint32_t, uint32_t, string> tup(api, stoul(address), stoul(size), data);
+		trace.push_back(tup);
 	}
     input.close();
 }
@@ -28,10 +28,10 @@ void parse_delta_trace(string d_file, vector<uint64_t>& delta_trace) {
 	ifstream input(d_file);
 	string line;
     while (getline(input, line)) {
-        istringstream iss(line);
-        string delta;
-        getline(iss, delta);
-        delta_trace.push_back(stoul(delta));
+		istringstream iss(line);
+		string delta;
+		getline(iss, delta);
+		delta_trace.push_back(stoul(delta));
 	}
     input.close();
 }
@@ -45,8 +45,8 @@ void str_to_array(string d, double *data) {
 void host(int id) {
     traceGenerator* t = new traceGenerator(id, "host_" + to_string(id));
     vector<tuple<string, uint32_t, uint32_t, string>> trace;
-	string trace_f = "../trace/lmps/r" + to_string(id) + ".txt";
-	string delta_f = "../trace/lmps/d" + to_string(id) + ".txt";
+	string trace_f = "../trace/r" + to_string(id) + ".txt";
+	string delta_f = "../trace/d" + to_string(id) + ".txt";
 
     vector<uint64_t> delta_trace;
 	parse_trace(trace_f, trace);
@@ -72,7 +72,7 @@ void host(int id) {
 		}
 		/* Read */
 		else if (api == "R") {
-        	uint8_t* data_array = new uint8_t[size];
+			uint8_t* data_array = new uint8_t[size];
 			
 			t->trcRead(address, data_array, size, 0, delta);
 			
