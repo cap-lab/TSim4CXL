@@ -29,7 +29,7 @@ packet_size : 1024, // Byte
 flit_mode : 68, // Byte
 link_efficiency : 0.928, 
 PCIe_raw_bandwidth : 35, // Byte per nanosecond
-cxl_port_latency : 61, // nanosecond
+cxl_port_latency : 42, // nanosecond
 cxl_ic_latency : 20, // nanosecond
 
 // CPU configurations
@@ -77,7 +77,6 @@ Terminate:0:0:
 ```bash
 git clone https://github.com/cap-lab/TSim4CXL.git
 cd CXLSim
-mkdir shared
 cd backplane
 mkdir build && cd build
 cmake ..
@@ -86,20 +85,11 @@ make
 - **Ramulator2**
 ```bash
 git clone https://github.com/CMU-SAFARI/ramulator2.git
+sh prerequisite.sh
 cd ramulator2
 mkdir build && cd build
 cmake ..
 make
-```
-  - Some modifications for integration.
-    - **etc/CMakeList.txt -> ramulator2/CMakeList.txt** *(need to fix)*
-    - **etc/CMakeList2.txt -> ramulator2/src/CMakeList.txt** *(need to fix)*
-    - **etc/request.h -> ramulator2/src/base/request.h** *(need to fix)*
-    - **etc/request.cpp -> ramulator2/src/base/request.cpp** *(need to fix)*
-    - **etc/generic_dram_controller.cpp -> ramulator2/src/dram_controller/impl/generic_dram_controller.cpp** *(need to fix)*
-    - **etc/DDR5_3200C.yaml -> ramulator2/configs/DDR5_3200C.yaml** *(need to add)*
-    - **etc/Bridge.cpp -> ramulator2/src/Bridge.cpp** *(need to add)*
-    - **etc/Bridge.h -> ramulator2/src/Bridge.h** *(need to add)*
 
 ## How to Run
 ```bash
